@@ -30,16 +30,19 @@ export default function Home() {
       <section className="section" style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', paddingTop: '120px' }}>
         <div className="container grid grid-cols-2" style={{ alignItems: 'center' }}>
           <div className="animate-fade-in">
-            <h1 style={{ fontSize: '3.5rem', lineHeight: '1.1', marginBottom: '1.5rem', fontWeight: '800' }}>
+            <div style={{ display: 'inline-block', padding: '0.5rem 1rem', borderRadius: '100px', background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.2)', color: 'var(--accent-primary)', fontSize: '0.875rem', fontWeight: '600', marginBottom: '1.5rem' }}>
+              #1 Receipt Parsing Solution for Teams
+            </div>
+            <h1 style={{ fontSize: '4.5rem', lineHeight: '1.05', marginBottom: '1.5rem', fontWeight: '800', letterSpacing: '-0.02em' }}>
               {t.hero.title_start} <br />
               <span className="text-gradient">{t.hero.title_end}</span>
             </h1>
-            <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', marginBottom: '2.5rem' }}>
+            <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', marginBottom: '2rem', maxWidth: '90%', lineHeight: '1.6' }}>
               {t.hero.subtitle}
             </p>
             <div style={{ display: 'flex', gap: '1rem' }}>
-              <Link href="/register" className="btn btn-primary">{t.hero.cta_primary}</Link>
-              <Link href="#features" className="btn btn-outline">{t.hero.cta_secondary}</Link>
+              <Link href="/register" className="btn btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.125rem' }}>{t.hero.cta_primary}</Link>
+              <Link href="#features" className="btn btn-outline" style={{ padding: '1rem 2rem', fontSize: '1.125rem' }}>{t.hero.cta_secondary}</Link>
             </div>
           </div>
           <div className="animate-fade-in delay-200" style={{ position: 'relative' }}>
