@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ScanLine, Bot, LineChart, ShieldCheck, Check, Star, Mail } from 'lucide-react';
+import { ScanLine, Bot, LineChart, ShieldCheck, Check, Star, Mail, ArrowRight } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { TelegramDemo } from '@/components/TelegramDemo';
@@ -18,34 +18,39 @@ export default function Home() {
             <ScanLine className="text-accent" color="var(--accent-primary)" />
             <span>ReceiptAI</span>
           </div>
+          <div className="hidden md:flex items-center gap-8">
+            <Link href="#features" className="hover:text-white transition-colors">{t.navbar?.features || 'Features'}</Link>
+            <Link href="#how-it-works" className="hover:text-white transition-colors">{t.navbar?.howItWorks || 'How it Works'}</Link>
+            <Link href="#pricing" className="hover:text-white transition-colors">{t.navbar?.pricing || 'Pricing'}</Link>
+          </div>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <LanguageSwitcher />
             <Link href="/login" className="btn btn-ghost" style={{ border: 'none' }}>{t.navbar.login}</Link>
-            <Link href="/register" className="btn btn-primary">{t.navbar.started}</Link>
+            <Link href="/register" className="btn btn-primary hidden md:inline-flex">{t.navbar.started}</Link>
           </div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="section" style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', paddingTop: '120px' }}>
-        <div className="container grid grid-cols-2" style={{ alignItems: 'center' }}>
-          <div className="animate-fade-in">
+      <section className="section" style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', paddingTop: '120px', paddingBottom: '4rem' }}>
+        <div className="container grid grid-cols-1 md:grid-cols-2 gap-12" style={{ alignItems: 'center' }}>
+          <div className="animate-fade-in order-2 md:order-1">
             <div style={{ display: 'inline-block', padding: '0.5rem 1rem', borderRadius: '100px', background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.2)', color: 'var(--accent-primary)', fontSize: '0.875rem', fontWeight: '600', marginBottom: '1.5rem' }}>
               #1 Receipt Parsing Solution for Teams
             </div>
-            <h1 style={{ fontSize: '4.5rem', lineHeight: '1.05', marginBottom: '1.5rem', fontWeight: '800', letterSpacing: '-0.02em' }}>
+            <h1 className="hero-title" style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)', lineHeight: '1.05', marginBottom: '1.5rem', fontWeight: '800', letterSpacing: '-0.02em' }}>
               {t.hero.title_start} <br />
               <span className="text-gradient">{t.hero.title_end}</span>
             </h1>
             <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', marginBottom: '2rem', maxWidth: '90%', lineHeight: '1.6' }}>
               {t.hero.subtitle}
             </p>
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <Link href="/register" className="btn btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.125rem' }}>{t.hero.cta_primary}</Link>
               <Link href="#features" className="btn btn-outline" style={{ padding: '1rem 2rem', fontSize: '1.125rem' }}>{t.hero.cta_secondary}</Link>
             </div>
           </div>
-          <div className="animate-fade-in delay-200" style={{ position: 'relative' }}>
+          <div className="animate-fade-in delay-200 order-1 md:order-2" style={{ position: 'relative' }}>
             {/* Abstract Glow Background */}
             <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '300px', height: '300px', background: 'var(--accent-primary)', filter: 'blur(100px)', opacity: '0.2', borderRadius: '50%', zIndex: '-1' }}></div>
 
@@ -151,8 +156,8 @@ export default function Home() {
             <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)' }}>{t.features.subtitle}</p>
           </div>
 
-          <div className="grid grid-cols-3">
-            <div className="card hover-glow">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="card hover-glow" style={{ textAlign: 'center' }}>
               <div style={{ width: '50px', height: '50px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
                 <ScanLine className="text-accent" />
               </div>
@@ -191,7 +196,7 @@ export default function Home() {
             <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)' }}>{t.testimonials.subtitle}</p>
           </div>
 
-          <div className="grid grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Testimonial 1 */}
             <div className="card" style={{ textAlign: 'left' }}>
               <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1rem' }}>
@@ -255,12 +260,12 @@ export default function Home() {
             <p style={{ fontSize: '1.125rem', color: 'var(--text-secondary)', marginBottom: '2rem', maxWidth: '600px', margin: '0 auto 2rem' }}>
               {t.newsletter.desc}
             </p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', maxWidth: '500px', margin: '0 auto' }}>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', maxWidth: '500px', margin: '0 auto', flexWrap: 'wrap' }}>
               <input
                 type="email"
                 placeholder={t.newsletter.placeholder}
                 className="card"
-                style={{ flex: 1, margin: 0, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid var(--glass-border)' }}
+                style={{ flex: 1, margin: 0, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid var(--glass-border)', minWidth: '250px' }}
               />
               <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
                 {t.newsletter.button}
@@ -270,13 +275,62 @@ export default function Home() {
               {t.newsletter.privacy}
             </p>
           </div>
+
+          {/* Blog / News Section */}
+          <div style={{ marginTop: '6rem' }}>
+            <div className="text-center" style={{ marginBottom: '3rem' }}>
+              <h3 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t.blog.title}</h3>
+              <p style={{ color: 'var(--text-secondary)' }}>{t.blog.subtitle}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Post 1 */}
+              <div className="card hover-glow" style={{ textAlign: 'left', padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ height: '200px', background: 'linear-gradient(135deg, #1e293b, #0f172a)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--glass-border)' }}>
+                  <span style={{ padding: '0.5rem 1rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '20px', color: 'var(--accent-primary)', fontSize: '0.875rem', fontWeight: '500' }}>{t.blog.post1_tag}</span>
+                </div>
+                <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', lineHeight: '1.4' }}>{t.blog.post1_title}</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem', flex: 1 }}>{t.blog.post1_desc}</p>
+                  <Link href="#" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontWeight: '500' }}>
+                    {t.blog.read_more} <ArrowRight size={16} />
+                  </Link>
+                </div>
+              </div>
+              {/* Post 2 */}
+              <div className="card hover-glow" style={{ textAlign: 'left', padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ height: '200px', background: 'linear-gradient(135deg, #1e293b, #0f172a)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--glass-border)' }}>
+                  <span style={{ padding: '0.5rem 1rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '20px', color: '#10b981', fontSize: '0.875rem', fontWeight: '500' }}>{t.blog.post2_tag}</span>
+                </div>
+                <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', lineHeight: '1.4' }}>{t.blog.post2_title}</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem', flex: 1 }}>{t.blog.post2_desc}</p>
+                  <Link href="#" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontWeight: '500' }}>
+                    {t.blog.read_more} <ArrowRight size={16} />
+                  </Link>
+                </div>
+              </div>
+              {/* Post 3 */}
+              <div className="card hover-glow" style={{ textAlign: 'left', padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ height: '200px', background: 'linear-gradient(135deg, #1e293b, #0f172a)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--glass-border)' }}>
+                  <span style={{ padding: '0.5rem 1rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '20px', color: '#f59e0b', fontSize: '0.875rem', fontWeight: '500' }}>{t.blog.post3_tag}</span>
+                </div>
+                <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', lineHeight: '1.4' }}>{t.blog.post3_title}</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem', flex: 1 }}>{t.blog.post3_desc}</p>
+                  <Link href="#" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontWeight: '500' }}>
+                    {t.blog.read_more} <ArrowRight size={16} />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
       <footer style={{ background: 'var(--bg-primary)', padding: '4rem 0', borderTop: '1px solid var(--glass-border)' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '4rem', marginBottom: '4rem' }}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold', fontSize: '1.5rem', marginBottom: '1rem' }}>
                 <ScanLine className="text-accent" color="var(--accent-primary)" />
