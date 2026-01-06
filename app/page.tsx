@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { ScanLine, Bot, LineChart, ShieldCheck, Check, Star, Mail, ArrowRight } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -8,6 +9,17 @@ import { TelegramDemo } from '@/components/TelegramDemo';
 
 export default function Home() {
   const { t } = useLanguage();
+
+  useEffect(() => {
+    // Detect browser environment for optimization
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      console.log("Optimizing layout for Mobile Browser...");
+      // Additional mobile-specific logic can go here (CSS already handles layout)
+    } else {
+      console.log("Optimizing layout for Desktop Browser...");
+    }
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -61,7 +73,7 @@ export default function Home() {
                 <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#F59E0B' }}></div>
                 <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10B981' }}></div>
               </div>
-              <div style={{ padding: '2rem' }}>
+              <div style={{ padding: '2rem 2rem 6rem 2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
                   <div>
                     <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t.hero.mockup_total}</div>
@@ -208,7 +220,7 @@ export default function Home() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#cbd5e1' }}></div>
                 <div>
-                  <div style={{ fontWeight: 'bold' }}>Sarah J.</div>
+                  <div style={{ fontWeight: 'bold' }}>{(t.testimonials as any).t1_name}</div>
                   <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t.testimonials.t1_role}</div>
                 </div>
               </div>
@@ -224,7 +236,7 @@ export default function Home() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#cbd5e1' }}></div>
                 <div>
-                  <div style={{ fontWeight: 'bold' }}>Michael C.</div>
+                  <div style={{ fontWeight: 'bold' }}>{(t.testimonials as any).t2_name}</div>
                   <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t.testimonials.t2_role}</div>
                 </div>
               </div>
@@ -240,7 +252,7 @@ export default function Home() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#cbd5e1' }}></div>
                 <div>
-                  <div style={{ fontWeight: 'bold' }}>Elena R.</div>
+                  <div style={{ fontWeight: 'bold' }}>{(t.testimonials as any).t3_name}</div>
                   <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t.testimonials.t3_role}</div>
                 </div>
               </div>
@@ -291,7 +303,7 @@ export default function Home() {
                 <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', lineHeight: '1.4' }}>{t.blog.post1_title}</h4>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem', flex: 1 }}>{t.blog.post1_desc}</p>
-                  <Link href="#" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontWeight: '500' }}>
+                  <Link href="/blog/1" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontWeight: '500' }}>
                     {t.blog.read_more} <ArrowRight size={16} />
                   </Link>
                 </div>
@@ -304,7 +316,7 @@ export default function Home() {
                 <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', lineHeight: '1.4' }}>{t.blog.post2_title}</h4>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem', flex: 1 }}>{t.blog.post2_desc}</p>
-                  <Link href="#" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontWeight: '500' }}>
+                  <Link href="/blog/2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontWeight: '500' }}>
                     {t.blog.read_more} <ArrowRight size={16} />
                   </Link>
                 </div>
@@ -317,7 +329,7 @@ export default function Home() {
                 <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', lineHeight: '1.4' }}>{t.blog.post3_title}</h4>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem', flex: 1 }}>{t.blog.post3_desc}</p>
-                  <Link href="#" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontWeight: '500' }}>
+                  <Link href="/blog/3" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontWeight: '500' }}>
                     {t.blog.read_more} <ArrowRight size={16} />
                   </Link>
                 </div>
