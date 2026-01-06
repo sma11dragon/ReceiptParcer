@@ -78,8 +78,8 @@ export const translations = {
             secure: '256-bit SSL Secure',
         },
         blog: {
-            title: 'Regional Success Stories',
-            subtitle: 'See how Southeast Asian businesses are automating their finance operations.',
+            title: 'Success Stories',
+            subtitle: 'See how businesses in Singapore, Australia, and the USA are automating their finance operations.',
             read_more: 'Read Story',
             post1_title: 'Singapore Fintech "PayFast" Cuts Claim Processing by 90%',
             post1_desc: 'How CFO Wei Ming used ReceiptAI to automate GST compliance for his team of 50 consultants.',
@@ -203,8 +203,8 @@ export const translations = {
             secure: '256-bit SSL 安全',
         },
         blog: {
-            title: '区域成功案例',
-            subtitle: '看看东南亚企业如何实现财务运营自动化。',
+            title: '成功案例',
+            subtitle: '看看新加坡、澳大利亚和美国的企业如何实现财务运营自动化。',
             read_more: '阅读更多',
             post1_title: '新加坡金融科技公司 "PayFast" 缩减 90% 报销时间',
             post1_desc: 'CFO Wei Ming 如何利用 ReceiptAI 为其 50 人的顾问团队实现 GST合规自动化。',
