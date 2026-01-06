@@ -131,7 +131,7 @@ export default function Home() {
             </div>
 
             {/* Floating Element */}
-            <div className="card animate-fade-in delay-300" style={{ position: 'absolute', bottom: '-20px', right: '-20px', padding: '1rem', minWidth: '200px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div className="card animate-fade-in delay-300" style={{ position: 'absolute', top: '-10px', right: '-10px', padding: '1rem', minWidth: '200px', display: 'flex', alignItems: 'center', gap: '1rem', zIndex: 10 }}>
               <div style={{ width: '40px', height: '40px', background: 'var(--accent-primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Bot color="white" size={20} />
               </div>

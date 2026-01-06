@@ -29,9 +29,9 @@ export default function BlogPost() {
     };
 
     const getDummyAuthor = (id: string) => {
-        if (id === '1') return 'Wei Ming';
-        if (id === '2') return 'Aisha';
-        return 'Somsak';
+        if (id === '1') return 'Wei Leong';
+        if (id === '2') return 'Harper';
+        return 'James';
     };
 
     const getDummyContent = (id: string) => {
