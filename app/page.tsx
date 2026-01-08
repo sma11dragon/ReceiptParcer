@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { ScanLine, Bot, LineChart, ShieldCheck, Check, Star, Mail, ArrowRight } from 'lucide-react';
+import { ScanLine, Bot, LineChart, ShieldCheck, Check, Star, Mail, ArrowRight, Zap, Upload, MessageSquare, FileText } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { TelegramDemo } from '@/components/TelegramDemo';
@@ -30,10 +30,10 @@ export default function Home() {
             <ScanLine className="text-accent" color="var(--accent-primary)" />
             <span>ReceiptAI</span>
           </div>
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="#features" className="hover:text-white transition-colors">{t.navbar?.features || 'Features'}</Link>
-            <Link href="#how-it-works" className="hover:text-white transition-colors">{t.navbar?.howItWorks || 'How it Works'}</Link>
-            <Link href="#pricing" className="hover:text-white transition-colors">{t.navbar?.pricing || 'Pricing'}</Link>
+          <div className="desktop-only" style={{ display: 'none', alignItems: 'center', gap: '2rem' }}>
+            <Link href="#features" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }} className="hover:text-white">{t.navbar?.features || 'Features'}</Link>
+            <Link href="#how-it-works" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }} className="hover:text-white">{t.navbar?.howItWorks || 'How it Works'}</Link>
+            <Link href="#pricing" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }} className="hover:text-white">{t.navbar?.pricing || 'Pricing'}</Link>
           </div>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <LanguageSwitcher />
@@ -200,6 +200,117 @@ export default function Home() {
         </div>
       </section>
 
+      {/* How it Works Section */}
+      <section id="how-it-works" className="section">
+        <div className="container">
+          <div className="text-center" style={{ marginBottom: '4rem' }}>
+            <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem', fontWeight: 'bold' }}>{t.howItWorks?.title || 'How It Works'}</h2>
+            <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)' }}>{t.howItWorks?.subtitle || 'Three simple steps to automate your expense tracking'}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Step 1 */}
+            <div className="card" style={{ textAlign: 'center', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', width: '30px', height: '30px', background: 'var(--accent-primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.875rem' }}>1</div>
+              <div style={{ width: '60px', height: '60px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '1rem auto 1.5rem' }}>
+                <Upload size={28} color="var(--accent-primary)" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: '600' }}>{t.howItWorks?.step1_title || 'Snap & Send'}</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                {t.howItWorks?.step1_desc || 'Take a photo of any receipt and send it to our Telegram bot. That\'s it - no apps to download, no forms to fill.'}
+              </p>
+            </div>
+            {/* Step 2 */}
+            <div className="card" style={{ textAlign: 'center', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', width: '30px', height: '30px', background: 'var(--accent-primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.875rem' }}>2</div>
+              <div style={{ width: '60px', height: '60px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '1rem auto 1.5rem' }}>
+                <Bot size={28} color="var(--accent-primary)" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: '600' }}>{t.howItWorks?.step2_title || 'AI Extracts Data'}</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                {t.howItWorks?.step2_desc || 'Our AI instantly reads the receipt, extracting vendor, date, amount, and line items with 99% accuracy.'}
+              </p>
+            </div>
+            {/* Step 3 */}
+            <div className="card" style={{ textAlign: 'center', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', width: '30px', height: '30px', background: 'var(--accent-primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.875rem' }}>3</div>
+              <div style={{ width: '60px', height: '60px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '1rem auto 1.5rem' }}>
+                <FileText size={28} color="var(--accent-primary)" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: '600' }}>{t.howItWorks?.step3_title || 'Export & Report'}</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                {t.howItWorks?.step3_desc || 'Access your organized expenses anytime. Export to CSV, PDF, or sync directly with your accounting software.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="section" style={{ background: 'var(--bg-secondary)' }}>
+        <div className="container">
+          <div className="text-center" style={{ marginBottom: '4rem' }}>
+            <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem', fontWeight: 'bold' }}>{t.pricing?.title || 'Simple, Transparent Pricing'}</h2>
+            <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)' }}>{t.pricing?.subtitle || 'Start free, upgrade when you need more'}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+            {/* Free Plan */}
+            <div className="card" style={{ textAlign: 'center' }}>
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', fontWeight: '600' }}>{t.pricing?.free_title || 'Starter'}</h3>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{t.pricing?.free_desc || 'Perfect for personal use'}</p>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>$0</span>
+                <span style={{ color: 'var(--text-secondary)' }}>/month</span>
+              </div>
+              <ul style={{ textAlign: 'left', marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.free_f1 || '50 receipts/month'}</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.free_f2 || 'Basic OCR extraction'}</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.free_f3 || 'CSV export'}</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.free_f4 || 'Email support'}</li>
+              </ul>
+              <Link href="/register" className="btn btn-outline" style={{ width: '100%' }}>{t.pricing?.free_cta || 'Get Started Free'}</Link>
+            </div>
+
+            {/* Pro Plan */}
+            <div className="card" style={{ textAlign: 'center', border: '2px solid var(--accent-primary)', transform: 'scale(1.05)', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'var(--accent-primary)', padding: '0.25rem 1rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600' }}>{t.pricing?.popular || 'MOST POPULAR'}</div>
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', fontWeight: '600' }}>{t.pricing?.pro_title || 'Professional'}</h3>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{t.pricing?.pro_desc || 'For freelancers & small teams'}</p>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>$19</span>
+                <span style={{ color: 'var(--text-secondary)' }}>/month</span>
+              </div>
+              <ul style={{ textAlign: 'left', marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.pro_f1 || 'Unlimited receipts'}</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.pro_f2 || 'Advanced AI categorization'}</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.pro_f3 || 'Multi-currency support'}</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.pro_f4 || 'PDF & Excel exports'}</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.pro_f5 || 'Priority support'}</li>
+              </ul>
+              <Link href="/register" className="btn btn-primary" style={{ width: '100%' }}>{t.pricing?.pro_cta || 'Start 14-Day Free Trial'}</Link>
+            </div>
+
+            {/* Enterprise Plan */}
+            <div className="card" style={{ textAlign: 'center' }}>
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', fontWeight: '600' }}>{t.pricing?.enterprise_title || 'Enterprise'}</h3>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{t.pricing?.enterprise_desc || 'For large organizations'}</p>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>{t.pricing?.enterprise_price || 'Custom'}</span>
+              </div>
+              <ul style={{ textAlign: 'left', marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.enterprise_f1 || 'Everything in Pro'}</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.enterprise_f2 || 'Unlimited team members'}</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.enterprise_f3 || 'SSO & advanced security'}</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.enterprise_f4 || 'Custom integrations'}</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><Check size={16} color="#10B981" /> {t.pricing?.enterprise_f5 || 'Dedicated account manager'}</li>
+              </ul>
+              <Link href="/register" className="btn btn-outline" style={{ width: '100%' }}>{t.pricing?.enterprise_cta || 'Contact Sales'}</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials Section */}
       <section className="section">
         <div className="container" style={{ textAlign: 'center' }}>
@@ -355,25 +466,25 @@ export default function Home() {
             <div>
               <h4 style={{ fontWeight: 'bold', marginBottom: '1.5rem' }}>{t.footer.product}</h4>
               <ul style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)' }}>
-                <li><Link href="#" className="hover:text-white transition-colors">Features</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Integration</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="#features" className="hover:text-white transition-colors">{t.navbar?.features || 'Features'}</Link></li>
+                <li><Link href="#how-it-works" className="hover:text-white transition-colors">{t.navbar?.howItWorks || 'How it Works'}</Link></li>
+                <li><Link href="#pricing" className="hover:text-white transition-colors">{t.navbar?.pricing || 'Pricing'}</Link></li>
               </ul>
             </div>
             <div>
               <h4 style={{ fontWeight: 'bold', marginBottom: '1.5rem' }}>{t.footer.resources}</h4>
               <ul style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)' }}>
-                <li><Link href="#" className="hover:text-white transition-colors">Documentation</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">API Reference</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Blog</Link></li>
+                <li><Link href="/blog/1" className="hover:text-white transition-colors">{t.blog?.title || 'Success Stories'}</Link></li>
+                <li><Link href="/register" className="hover:text-white transition-colors">{t.navbar?.started || 'Get Started'}</Link></li>
+                <li><Link href="/login" className="hover:text-white transition-colors">{t.navbar?.login || 'Login'}</Link></li>
               </ul>
             </div>
             <div>
               <h4 style={{ fontWeight: 'bold', marginBottom: '1.5rem' }}>{t.footer.company}</h4>
               <ul style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)' }}>
-                <li><Link href="#" className="hover:text-white transition-colors">About</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Careers</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Contact</Link></li>
+                <li><Link href="#features" className="hover:text-white transition-colors">{t.navbar?.features || 'About'}</Link></li>
+                <li><Link href="#pricing" className="hover:text-white transition-colors">{t.navbar?.pricing || 'Pricing'}</Link></li>
+                <li><Link href="/register" className="hover:text-white transition-colors">{t.navbar?.started || 'Contact'}</Link></li>
               </ul>
             </div>
           </div>
