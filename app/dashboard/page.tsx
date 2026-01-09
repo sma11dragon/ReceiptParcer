@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ScanLine, RefreshCw, Copy, Check, LogOut, Bot } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
@@ -8,22 +9,29 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function DashboardPage() {
     const { t } = useLanguage();
-    // Use consistent state names
+    const router = useRouter();
     const [telegramToken, setTelegramToken] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [copied, setCopied] = useState(false);
     const [user, setUser] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Mock user for now or read from local storage if available
+        // Check for authenticated user
         const userData = localStorage.getItem('user');
         if (userData) {
             setUser(JSON.parse(userData));
+            setIsLoading(false);
         } else {
-            // For demo purposes, just set a dummy user if not found, or redirect
-            setUser({ username: 'John Doe', email: 'john@example.com', created_at: new Date().toISOString() });
+            // Redirect to login if no user found
+            router.push('/login');
         }
-    }, []);
+    }, [router]);
+
+    const handleLogout = () => {
+        localStorage.removeItem('user');
+        router.push('/login');
+    };
 
     const generateToken = async () => {
         setIsGenerating(true);
@@ -43,7 +51,16 @@ export default function DashboardPage() {
         }
     };
 
-    if (!user) return null; // or a loading spinner
+    if (isLoading || !user) {
+        return (
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)' }}>
+                <div style={{ textAlign: 'center' }}>
+                    <ScanLine size={48} className="text-accent" style={{ marginBottom: '1rem' }} />
+                    <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{
@@ -74,10 +91,10 @@ export default function DashboardPage() {
                         <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
                             {user.username ? user.username.substring(0, 2).toUpperCase() : 'JD'}
                         </div>
-                        <Link href="/login" className="btn btn-ghost" style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444' }}>
+                        <button onClick={handleLogout} className="btn btn-ghost" style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444' }}>
                             <LogOut size={18} />
                             <span style={{ fontSize: '0.875rem' }}>{t.dashboard.logout}</span>
-                        </Link>
+                        </button>
                     </div>
                 </div>
             </nav>

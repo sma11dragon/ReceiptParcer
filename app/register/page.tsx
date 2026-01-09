@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ScanLine, ArrowLeft, Mail, Lock, User, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -8,13 +9,48 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function Register() {
     const { t } = useLanguage();
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [location, setLocation] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => setIsLoading(false), 1500);
+        setError('');
+        setSuccess('');
+
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, email, password, location }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data.message || 'Registration failed. Please try again.');
+                setIsLoading(false);
+                return;
+            }
+
+            setSuccess('Account created successfully! Redirecting to login...');
+
+            // Redirect to login after 2 seconds
+            setTimeout(() => {
+                router.push('/login');
+            }, 2000);
+        } catch (err) {
+            setError('Network error. Please check your connection.');
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -49,12 +85,40 @@ export default function Register() {
                     <p style={{ color: 'var(--text-secondary)' }}>{t.auth.signup_desc}</p>
                 </div>
 
+                {error && (
+                    <div style={{
+                        padding: '1rem',
+                        marginBottom: '1.5rem',
+                        color: '#ef4444',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                        borderRadius: '0.5rem',
+                        textAlign: 'center'
+                    }}>
+                        {error}
+                    </div>
+                )}
+
+                {success && (
+                    <div style={{
+                        padding: '1rem',
+                        marginBottom: '1.5rem',
+                        color: '#10b981',
+                        background: 'rgba(16, 185, 129, 0.1)',
+                        border: '1px solid rgba(16, 185, 129, 0.2)',
+                        borderRadius: '0.5rem',
+                        textAlign: 'center'
+                    }}>
+                        {success}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div>
                         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>{t.auth.username}</label>
                         <div style={{ position: 'relative' }}>
                             <User size={18} color="var(--text-secondary)" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
-                            <input type="text" className="input" placeholder="johndoe" required style={{ width: '100%', paddingLeft: '3rem' }} />
+                            <input type="text" className="input" placeholder="johndoe" required value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%', paddingLeft: '3rem' }} />
                         </div>
                     </div>
 
@@ -62,7 +126,7 @@ export default function Register() {
                         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>{t.auth.email}</label>
                         <div style={{ position: 'relative' }}>
                             <Mail size={18} color="var(--text-secondary)" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
-                            <input type="email" className="input" placeholder="john@example.com" required style={{ width: '100%', paddingLeft: '3rem' }} />
+                            <input type="email" className="input" placeholder="john@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: '100%', paddingLeft: '3rem' }} />
                         </div>
                     </div>
 
@@ -70,7 +134,7 @@ export default function Register() {
                         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>{t.auth.location}</label>
                         <div style={{ position: 'relative' }}>
                             <MapPin size={18} color="var(--text-secondary)" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
-                            <input type="text" className="input" placeholder="New York, USA" required style={{ width: '100%', paddingLeft: '3rem' }} />
+                            <input type="text" className="input" placeholder="New York, USA" value={location} onChange={(e) => setLocation(e.target.value)} style={{ width: '100%', paddingLeft: '3rem' }} />
                         </div>
                     </div>
 
@@ -78,7 +142,7 @@ export default function Register() {
                         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>{t.auth.password}</label>
                         <div style={{ position: 'relative' }}>
                             <Lock size={18} color="var(--text-secondary)" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
-                            <input type="password" className="input" placeholder="••••••••" required style={{ width: '100%', paddingLeft: '3rem' }} />
+                            <input type="password" className="input" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', paddingLeft: '3rem' }} />
                         </div>
                     </div>
 

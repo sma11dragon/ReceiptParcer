@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ScanLine, ArrowLeft, Mail, Lock } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -8,19 +9,43 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function Login() {
     const { t } = useLanguage();
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data.error || 'Login failed. Please try again.');
+                setIsLoading(false);
+                return;
+            }
+
+            // Store user data in localStorage
+            localStorage.setItem('user', JSON.stringify(data.user));
+
+            // Redirect to dashboard
+            router.push('/dashboard');
+        } catch (err) {
+            setError('Network error. Please check your connection.');
             setIsLoading(false);
-            // setError('Invalid credentials'); // Uncomment to test error state
-        }, 1500);
+        }
     };
 
     return (
@@ -85,6 +110,8 @@ export default function Login() {
                                 required
                                 className="input"
                                 placeholder="name@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 style={{ paddingLeft: '3rem', width: '100%' }}
                             />
                         </div>
@@ -101,6 +128,8 @@ export default function Login() {
                                 required
                                 className="input"
                                 placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 style={{ paddingLeft: '3rem', width: '100%' }}
                             />
                         </div>
