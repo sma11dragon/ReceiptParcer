@@ -1,0 +1,2 @@
+"id","username","email","password_hash","location","telegram_chat_id","is_verified","created_at"
+1,"siewloong","sma11dragon@gmail.com","$2b$10$c7LyOBNF3QHdChYs3r5DYOuXWb2ArXGoDYyEbc.8XFwmdVPWVX2u6","Singapore",NULL,False,"2026-01-04 01:27:49.999853+00"
