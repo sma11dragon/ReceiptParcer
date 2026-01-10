@@ -6,9 +6,15 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NOT NULL,
   location VARCHAR(100),
   telegram_chat_id BIGINT UNIQUE,
+  telegram_bot_username VARCHAR(100),
+  telegram_bot_token VARCHAR(100),
   is_verified BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Migration: Add bot columns to existing users table
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_bot_username VARCHAR(100);
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_bot_token VARCHAR(100);
 
 -- Verification Tokens (for email or bot linking)
 CREATE TABLE IF NOT EXISTS verification_tokens (

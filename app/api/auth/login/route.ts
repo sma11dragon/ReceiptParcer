@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
         // Find user by email
         const userResult = await pool.query(
-            'SELECT id, username, email, password_hash, location, created_at FROM users WHERE email = $1',
+            'SELECT id, username, email, password_hash, location, telegram_bot_username, created_at FROM users WHERE email = $1',
             [email]
         );
 

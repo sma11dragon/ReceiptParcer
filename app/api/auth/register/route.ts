@@ -2,9 +2,38 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
+// Helper function to set up Telegram webhook
+async function setupTelegramWebhook(botToken: string): Promise<{ success: boolean; error?: string }> {
+    const webhookUrl = process.env.N8N_WEBHOOK_URL;
+
+    if (!webhookUrl) {
+        console.error('N8N_WEBHOOK_URL not configured');
+        return { success: false, error: 'Webhook URL not configured' };
+    }
+
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: webhookUrl }),
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+            return { success: true };
+        } else {
+            return { success: false, error: data.description || 'Failed to set webhook' };
+        }
+    } catch (error) {
+        console.error('Telegram webhook error:', error);
+        return { success: false, error: 'Failed to connect to Telegram' };
+    }
+}
+
 export async function POST(request: Request) {
     try {
-        const { username, email, password, location } = await request.json();
+        const { username, email, password, location, botUsername, botToken } = await request.json();
 
         // Basic Validation
         if (!username || !email || !password) {
@@ -27,16 +56,27 @@ export async function POST(request: Request) {
             );
         }
 
+        // If bot token provided, validate and set up webhook
+        if (botToken) {
+            const webhookResult = await setupTelegramWebhook(botToken);
+            if (!webhookResult.success) {
+                return NextResponse.json(
+                    { message: `Invalid bot token: ${webhookResult.error}` },
+                    { status: 400 }
+                );
+            }
+        }
+
         // Hash Password
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
-        // Insert User
+        // Insert User with bot credentials
         const newUser = await pool.query(
-            `INSERT INTO users (username, email, password_hash, location) 
-       VALUES ($1, $2, $3, $4) 
-       RETURNING id, username, email`,
-            [username, email, passwordHash, location || null]
+            `INSERT INTO users (username, email, password_hash, location, telegram_bot_username, telegram_bot_token)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING id, username, email, telegram_bot_username`,
+            [username, email, passwordHash, location || null, botUsername || null, botToken || null]
         );
 
         return NextResponse.json(

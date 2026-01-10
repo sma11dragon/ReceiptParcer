@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ScanLine, RefreshCw, Copy, Check, LogOut, Bot } from 'lucide-react';
+import { ScanLine, LogOut, Bot, Check, AlertCircle, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -10,9 +10,6 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 export default function DashboardPage() {
     const { t } = useLanguage();
     const router = useRouter();
-    const [telegramToken, setTelegramToken] = useState<string | null>(null);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [copied, setCopied] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -33,23 +30,7 @@ export default function DashboardPage() {
         router.push('/login');
     };
 
-    const generateToken = async () => {
-        setIsGenerating(true);
-        // Simulate API call
-        setTimeout(() => {
-            const randomToken = Math.random().toString(36).substring(2, 10).toUpperCase();
-            setTelegramToken(randomToken);
-            setIsGenerating(false);
-        }, 1500);
-    };
-
-    const copyToClipboard = () => {
-        if (telegramToken) {
-            navigator.clipboard.writeText(telegramToken);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        }
-    };
+    const hasBotConnected = user?.telegram_bot_username;
 
     if (isLoading || !user) {
         return (
@@ -102,90 +83,153 @@ export default function DashboardPage() {
             <div className="container" style={{ maxWidth: '800px' }}>
                 <div style={{ marginBottom: '2rem' }}>
                     <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{t.dashboard.welcome}, {user.username}!</h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>{t.dashboard.connect_desc}</p>
+                    <p style={{ color: 'var(--text-secondary)' }}>
+                        {hasBotConnected
+                            ? (t.dashboard.bot_ready_desc || 'Your Telegram bot is connected and ready to receive receipts.')
+                            : (t.dashboard.no_bot_desc || 'Connect a Telegram bot to start parsing receipts.')}
+                    </p>
                 </div>
 
                 <div className="card" style={{ padding: '3rem', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)', width: '300px', height: '300px', background: 'var(--accent-primary)', filter: 'blur(100px)', opacity: '0.1', borderRadius: '50%', pointerEvents: 'none' }}></div>
 
-                    <div style={{ width: '80px', height: '80px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
-                        <Bot size={40} className="text-accent" />
+                    <div style={{
+                        width: '80px',
+                        height: '80px',
+                        background: hasBotConnected ? 'rgba(16, 185, 129, 0.1)' : 'rgba(139, 92, 246, 0.1)',
+                        borderRadius: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 2rem'
+                    }}>
+                        <Bot size={40} style={{ color: hasBotConnected ? '#10b981' : 'var(--accent-primary)' }} />
                     </div>
 
-                    <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '1rem' }}>{t.dashboard.connect_title}</h2>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem', maxWidth: '400px', margin: '0 auto 2.5rem' }}>
-                        {t.dashboard.connect_desc}
-                    </p>
-
-                    {!telegramToken ? (
-                        <button
-                            onClick={generateToken}
-                            disabled={isGenerating}
-                            className="btn btn-primary"
-                            style={{ padding: '0.75rem 2rem', fontSize: '1.1rem' }}
-                        >
-                            {isGenerating ? (
-                                <>
-                                    <RefreshCw size={20} className="animate-spin" style={{ marginRight: '0.5rem' }} />
-                                    {t.dashboard.generating}
-                                </>
-                            ) : (
-                                t.dashboard.generate_btn
-                            )}
-                        </button>
-                    ) : (
-                        <div className="animate-fade-in" style={{ maxWidth: '500px', margin: '0 auto' }}>
-                            <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '1rem', borderRadius: '12px', marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#10b981' }}>
+                    {hasBotConnected ? (
+                        /* Bot Connected State */
+                        <div className="animate-fade-in">
+                            <div style={{
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                border: '1px solid rgba(16, 185, 129, 0.2)',
+                                padding: '1rem 1.5rem',
+                                borderRadius: '12px',
+                                marginBottom: '2rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.75rem',
+                                color: '#10b981'
+                            }}>
                                 <Check size={20} />
-                                <span style={{ fontWeight: '600' }}>{t.dashboard.token_generated}</span>
+                                <span style={{ fontWeight: '600' }}>{t.dashboard.bot_connected || 'Bot Connected'}</span>
                             </div>
 
-                            <div style={{ marginBottom: '1rem', textAlign: 'left' }}>
-                                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'block' }}>{t.dashboard.your_token}</label>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <code style={{ flex: 1, padding: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid var(--glass-border)', fontFamily: 'monospace', fontSize: '1.25rem', letterSpacing: '0.1em', textAlign: 'center' }}>
-                                        {telegramToken}
-                                    </code>
-                                    <button
-                                        onClick={copyToClipboard}
-                                        className="btn btn-outline"
-                                        style={{ width: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                                        title="Copy Token"
-                                    >
-                                        {copied ? <Check size={20} color="#10b981" /> : <Copy size={20} />}
-                                    </button>
-                                </div>
-                            </div>
+                            <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                                {user.telegram_bot_username}
+                            </h2>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+                                {t.dashboard.bot_connected_desc || 'Your bot is ready to receive receipt images.'}
+                            </p>
 
-                            <div style={{ textAlign: 'left', background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
-                                <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem' }}>{t.dashboard.next_steps}</h3>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                    <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold' }}>1</div>
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{t.dashboard.step1} <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>Telegram</span></div>
+                            <div style={{
+                                background: 'rgba(255,255,255,0.03)',
+                                padding: '1.5rem',
+                                borderRadius: '12px',
+                                border: '1px solid var(--glass-border)',
+                                textAlign: 'left',
+                                maxWidth: '400px',
+                                margin: '0 auto'
+                            }}>
+                                <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem' }}>
+                                    {t.dashboard.how_to_use || 'How to Use'}
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                                        <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>1.</span>
+                                        <span>{t.dashboard.use_step1 || 'Open Telegram and find your bot'}</span>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold' }}>2</div>
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                                            {t.dashboard.step2} <a href="#" style={{ color: 'var(--accent-primary)' }}>@ReceiptGeniusBot</a>
-                                        </div>
+                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                                        <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>2.</span>
+                                        <span>{t.dashboard.use_step2 || 'Send a photo of any receipt'}</span>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold' }}>3</div>
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                                            {t.dashboard.step3} <code style={{ background: 'rgba(0,0,0,0.3)', padding: '0.2rem 0.4rem', borderRadius: '4px', fontSize: '0.85em' }}>/start {telegramToken}</code>
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold' }}>4</div>
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{t.dashboard.step4}</div>
+                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                                        <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>3.</span>
+                                        <span>{t.dashboard.use_step3 || 'The bot will extract and save the data'}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <button onClick={() => setTelegramToken(null)} style={{ marginTop: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                {t.dashboard.new_token}
-                            </button>
+                            <a
+                                href={`https://t.me/${user.telegram_bot_username?.replace('@', '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-primary"
+                                style={{ marginTop: '2rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                            >
+                                {t.dashboard.open_bot || 'Open Bot in Telegram'}
+                                <ExternalLink size={16} />
+                            </a>
+                        </div>
+                    ) : (
+                        /* No Bot Connected State */
+                        <div className="animate-fade-in">
+                            <div style={{
+                                background: 'rgba(251, 191, 36, 0.1)',
+                                border: '1px solid rgba(251, 191, 36, 0.2)',
+                                padding: '1rem 1.5rem',
+                                borderRadius: '12px',
+                                marginBottom: '2rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.75rem',
+                                color: '#fbbf24'
+                            }}>
+                                <AlertCircle size={20} />
+                                <span style={{ fontWeight: '600' }}>{t.dashboard.no_bot || 'No Bot Connected'}</span>
+                            </div>
+
+                            <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                                {t.dashboard.setup_bot_title || 'Set Up Your Telegram Bot'}
+                            </h2>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', maxWidth: '400px', margin: '0 auto 2rem' }}>
+                                {t.dashboard.setup_bot_desc || 'You need to create and connect a Telegram bot to start parsing receipts.'}
+                            </p>
+
+                            <div style={{
+                                background: 'rgba(255,255,255,0.03)',
+                                padding: '1.5rem',
+                                borderRadius: '12px',
+                                border: '1px solid var(--glass-border)',
+                                textAlign: 'left',
+                                maxWidth: '450px',
+                                margin: '0 auto 2rem'
+                            }}>
+                                <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem' }}>
+                                    {t.dashboard.create_bot_steps || 'Create a Bot in 2 Minutes'}
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                                        <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>1.</span>
+                                        <span>{t.auth.bot_step1 || 'Open Telegram and search for @BotFather'}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                                        <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>2.</span>
+                                        <span>{t.auth.bot_step2 || 'Send /newbot command'}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                                        <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>3.</span>
+                                        <span>{t.auth.bot_step3 || 'Choose a name for your bot'}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                                        <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>4.</span>
+                                        <span>{t.dashboard.update_profile || 'Update your profile with the bot credentials'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                                {t.dashboard.contact_support || 'Need help? Contact support.'}
+                            </p>
                         </div>
                     )}
                 </div>

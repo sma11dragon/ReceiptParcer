@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ScanLine, ArrowLeft, Mail, Lock, User, MapPin } from 'lucide-react';
+import { ScanLine, ArrowLeft, Mail, Lock, User, MapPin, Bot, Key, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -17,6 +17,9 @@ export default function Register() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [location, setLocation] = useState('');
+    const [botUsername, setBotUsername] = useState('');
+    const [botToken, setBotToken] = useState('');
+    const [showBotHelp, setShowBotHelp] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,7 +33,7 @@ export default function Register() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, email, password, location }),
+                body: JSON.stringify({ username, email, password, location, botUsername, botToken }),
             });
 
             const data = await response.json();
@@ -136,6 +139,88 @@ export default function Register() {
                             <MapPin size={18} color="var(--text-secondary)" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
                             <input type="text" className="input" placeholder="New York, USA" value={location} onChange={(e) => setLocation(e.target.value)} style={{ width: '100%', paddingLeft: '3rem' }} />
                         </div>
+                    </div>
+
+                    {/* Telegram Bot Section */}
+                    <div style={{
+                        background: 'rgba(139, 92, 246, 0.05)',
+                        border: '1px solid rgba(139, 92, 246, 0.2)',
+                        borderRadius: '12px',
+                        padding: '1.25rem',
+                        marginTop: '0.5rem'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                            <Bot size={20} className="text-accent" />
+                            <span style={{ fontWeight: '600', fontSize: '0.95rem' }}>{t.auth.bot_setup_title || 'Telegram Bot Setup'}</span>
+                        </div>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>{t.auth.bot_username || 'Bot Username'}</label>
+                            <div style={{ position: 'relative' }}>
+                                <Bot size={18} color="var(--text-secondary)" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder="@YourBotName"
+                                    value={botUsername}
+                                    onChange={(e) => setBotUsername(e.target.value)}
+                                    style={{ width: '100%', paddingLeft: '3rem' }}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>{t.auth.bot_token || 'Bot Token'}</label>
+                            <div style={{ position: 'relative' }}>
+                                <Key size={18} color="var(--text-secondary)" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
+                                <input
+                                    type="password"
+                                    className="input"
+                                    placeholder="123456789:ABCdefGHI..."
+                                    value={botToken}
+                                    onChange={(e) => setBotToken(e.target.value)}
+                                    style={{ width: '100%', paddingLeft: '3rem' }}
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setShowBotHelp(!showBotHelp)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                color: 'var(--accent-primary)',
+                                fontSize: '0.875rem',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: 0
+                            }}
+                        >
+                            {showBotHelp ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            {t.auth.how_to_create_bot || 'How do I create a Telegram bot?'}
+                        </button>
+
+                        {showBotHelp && (
+                            <div style={{
+                                marginTop: '1rem',
+                                padding: '1rem',
+                                background: 'rgba(0,0,0,0.2)',
+                                borderRadius: '8px',
+                                fontSize: '0.875rem',
+                                color: 'var(--text-secondary)'
+                            }}>
+                                <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <li>{t.auth.bot_step1 || 'Open Telegram and search for @BotFather'}</li>
+                                    <li>{t.auth.bot_step2 || 'Send /newbot command'}</li>
+                                    <li>{t.auth.bot_step3 || 'Choose a name for your bot (e.g., "My Receipt Bot")'}</li>
+                                    <li>{t.auth.bot_step4 || 'Choose a username ending in "bot" (e.g., @MyReceiptBot)'}</li>
+                                    <li>{t.auth.bot_step5 || 'Copy the token BotFather gives you and paste it above'}</li>
+                                </ol>
+                            </div>
+                        )}
                     </div>
 
                     <div>
