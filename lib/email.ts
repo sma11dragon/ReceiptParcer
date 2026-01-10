@@ -1,18 +1,19 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-// Create reusable transporter using Gmail SMTP
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-    },
-});
+// Lazy initialization to avoid build-time errors
+let resend: Resend | null = null;
+
+function getResendClient(): Resend {
+    if (!resend) {
+        resend = new Resend(process.env.RESEND_API_KEY);
+    }
+    return resend;
+}
 
 export async function sendOTPEmail(to: string, otp: string): Promise<boolean> {
     try {
-        const mailOptions = {
-            from: `"ReceiptAI" <${process.env.GMAIL_USER}>`,
+        const { error } = await getResendClient().emails.send({
+            from: `ReceiptAI <${process.env.EMAIL_FROM || 'onboarding@resend.dev'}>`,
             to: to,
             subject: 'Your ReceiptAI Password Reset OTP',
             html: `
@@ -48,9 +49,13 @@ export async function sendOTPEmail(to: string, otp: string): Promise<boolean> {
                     </div>
                 </div>
             `,
-        };
+        });
 
-        await transporter.sendMail(mailOptions);
+        if (error) {
+            console.error('Error sending email:', error);
+            return false;
+        }
+
         return true;
     } catch (error) {
         console.error('Error sending email:', error);
