@@ -1,4 +1,6 @@
 // Build: 2026-01-31 - Force rebuild with new env vars
+export const runtime = 'nodejs'; // Force Node.js runtime to avoid Edge SSL issues
+
 import { NextRequest, NextResponse } from 'next/server';
 import { AwsV4Signer } from 'aws4fetch';
 import sharp from 'sharp';
