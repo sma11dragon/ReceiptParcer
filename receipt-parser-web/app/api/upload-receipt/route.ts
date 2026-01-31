@@ -2,8 +2,11 @@
 export const runtime = 'nodejs'; // Force Node.js runtime to avoid Edge SSL issues
 
 import { NextRequest, NextResponse } from 'next/server';
-import { AwsV4Signer } from 'aws4fetch';
+import axios from 'axios';
 import sharp from 'sharp';
+import crypto from 'crypto';
+import { format } from 'date-fns';
+import https from 'https';
 
 const R2_ENDPOINT = process.env.R2_ENDPOINT;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
@@ -14,6 +17,17 @@ const R2_BUCKET = process.env.R2_BUCKET_NAME || 'receiptai-images';
 if (!R2_ENDPOINT || !R2_PUBLIC_URL || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
   throw new Error('R2 environment variables must be set');
 }
+
+ // Create axios instance with custom SSL/TLS settings
+const axiosInstance = axios.create({
+  httpsAgent: new https.Agent({
+    // Force TLS 1.2 for compatibility with Cloudflare R2
+    secureProtocol: 'TLSv1_2_method',
+    // Accept self-signed certificates if needed
+    rejectUnauthorized: false,
+  }),
+  timeout: 30000,
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,40 +83,64 @@ export async function POST(request: NextRequest) {
     
     console.log('Original size:', arrayBuffer.byteLength, 'Compressed:', compressedBuffer.length);
     
-    // Build R2 object key
+    // Build R2 object key and upload URL
     const fileKey = `receipts/${userId}/${filename}`;
     const uploadUrl = `${R2_ENDPOINT}/${R2_BUCKET}/${fileKey}`;
     
-    // Sign the request with aws4fetch
-    // Convert Buffer to Uint8Array for proper type compatibility
-    const bodyArray = new Uint8Array(compressedBuffer);
+     // Generate AWS SigV4 signature manually
     
-    const signer = new AwsV4Signer({
-      url: uploadUrl,
-      method: 'PUT',
+    const now = new Date();
+    const amzDate = format(now, 'yyyyMMdd\'T\'HHmmss\'Z\'');
+    const dateStamp = format(now, 'yyyyMMdd');
+    
+     // Create canonical request
+    const canonicalRequest = [
+      'PUT',
+      `/${R2_BUCKET}/${fileKey}`,
+      '',
+      `host:${new URL(R2_ENDPOINT!).hostname}`,
+      `x-amz-acl:public-read`,
+      `x-amz-content-sha256:${crypto.createHash('sha256').update(compressedBuffer).digest('hex')}`,
+      `x-amz-date:${amzDate}`,
+      '',
+      'host;x-amz-acl;x-amz-content-sha256;x-amz-date',
+      crypto.createHash('sha256').update(compressedBuffer).digest('hex')
+    ].join('\n');
+    
+    // Create string to sign
+    const algorithm = 'AWS4-HMAC-SHA256';
+    const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
+    const stringToSign = [
+      algorithm,
+      amzDate,
+      credentialScope,
+      crypto.createHash('sha256').update(canonicalRequest).digest('hex')
+    ].join('\n');
+    
+    // Calculate signature
+    const hmac = (key: Buffer, msg: string) => crypto.createHmac('sha256', key).update(msg).digest();
+    const getSignatureKey = (key: string, dateStamp: string, regionName: string, serviceName: string) => {
+      const kDate = hmac(Buffer.from('AWS4' + key), dateStamp);
+      const kRegion = hmac(kDate, regionName);
+      const kService = hmac(kRegion, serviceName);
+      return hmac(kService, 'aws4_request');
+    };
+    
+    const signingKey = getSignatureKey(R2_SECRET_ACCESS_KEY!, dateStamp, 'auto', 's3');
+    const signature = hmac(signingKey, stringToSign).toString('hex');
+    
+     // Upload to R2 using axios with proper headers
+    await axiosInstance.put(uploadUrl, compressedBuffer, {
       headers: {
         'Content-Type': 'image/jpeg',
         'x-amz-acl': 'public-read',
+        'x-amz-content-sha256': crypto.createHash('sha256').update(compressedBuffer).digest('hex'),
+        'x-amz-date': amzDate,
+        'Authorization': `${algorithm} Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=host;x-amz-acl;x-amz-content-sha256;x-amz-date, Signature=${signature}`
       },
-      body: bodyArray,
-      accessKeyId: R2_ACCESS_KEY_ID!,
-      secretAccessKey: R2_SECRET_ACCESS_KEY!,
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
     });
-    
-    // Get signed request
-    const signed = await signer.sign();
-    
-    // Upload using native fetch (avoids SSL issues)
-    // signed is an object with url, method, headers, body
-    const response = await fetch(signed.url, {
-      method: signed.method,
-      headers: signed.headers,
-      body: signed.body,
-    });
-    
-    if (!response.ok) {
-      throw new Error(`R2 upload failed: ${response.status} ${response.statusText}`);
-    }
     
     const publicUrl = `${R2_PUBLIC_URL}/${fileKey}`;
     
@@ -115,10 +153,20 @@ export async function POST(request: NextRequest) {
       savings: Math.round((1 - compressedBuffer.length / arrayBuffer.byteLength) * 100) + '%'
     });
     
-  } catch (error) {
-    console.error('Upload error:', error);
+   } catch (error: unknown) {
+     console.error('Upload error:', error);
+    
+    let errorMessage = 'Unknown error';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'object' && error !== null && 'response' in error) {
+      const axiosError = error as { response?: { data?: unknown } };
+      console.error('Error details:', axiosError.response?.data || 'No response data');
+      errorMessage = 'Axios request failed';
+    }
+    
     return NextResponse.json(
-      { error: 'Upload failed', details: String(error) },
+      { error: 'Upload failed', details: errorMessage },
       { status: 500 }
     );
   }
