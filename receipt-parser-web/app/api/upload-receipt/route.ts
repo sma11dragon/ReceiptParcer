@@ -88,10 +88,15 @@ export async function POST(request: NextRequest) {
     });
     
     // Get signed request
-    const signedRequest = await signer.sign();
+    const signed = await signer.sign();
     
     // Upload using native fetch (avoids SSL issues)
-    const response = await fetch(signedRequest);
+    // signed is an object with url, method, headers, body
+    const response = await fetch(signed.url, {
+      method: signed.method,
+      headers: signed.headers,
+      body: signed.body,
+    });
     
     if (!response.ok) {
       throw new Error(`R2 upload failed: ${response.status} ${response.statusText}`);
