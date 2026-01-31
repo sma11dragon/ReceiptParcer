@@ -72,6 +72,9 @@ export async function POST(request: NextRequest) {
     const uploadUrl = `${R2_ENDPOINT}/${R2_BUCKET}/${fileKey}`;
     
     // Sign the request with aws4fetch
+    // Convert Buffer to Uint8Array for proper type compatibility
+    const bodyArray = new Uint8Array(compressedBuffer);
+    
     const signer = new AwsV4Signer({
       url: uploadUrl,
       method: 'PUT',
@@ -79,7 +82,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'image/jpeg',
         'x-amz-acl': 'public-read',
       },
-      body: compressedBuffer,
+      body: bodyArray,
       accessKeyId: R2_ACCESS_KEY_ID,
       secretAccessKey: R2_SECRET_ACCESS_KEY,
     });
