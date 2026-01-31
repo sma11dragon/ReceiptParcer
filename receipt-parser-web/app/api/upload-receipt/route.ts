@@ -83,8 +83,8 @@ export async function POST(request: NextRequest) {
         'x-amz-acl': 'public-read',
       },
       body: bodyArray,
-      accessKeyId: R2_ACCESS_KEY_ID,
-      secretAccessKey: R2_SECRET_ACCESS_KEY,
+      accessKeyId: R2_ACCESS_KEY_ID!,
+      secretAccessKey: R2_SECRET_ACCESS_KEY!,
     });
     
     // Get signed request
