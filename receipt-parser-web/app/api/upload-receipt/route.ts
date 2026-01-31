@@ -2,7 +2,6 @@
 export const runtime = 'nodejs'; // Force Node.js runtime to avoid Edge SSL issues
 
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
 import sharp from 'sharp';
 import crypto from 'crypto';
 import { format } from 'date-fns';
@@ -18,16 +17,35 @@ if (!R2_ENDPOINT || !R2_PUBLIC_URL || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY
   throw new Error('R2 environment variables must be set');
 }
 
- // Create axios instance with custom SSL/TLS settings
-const axiosInstance = axios.create({
-  httpsAgent: new https.Agent({
-    // Force TLS 1.2 for compatibility with Cloudflare R2
-    secureProtocol: 'TLSv1_2_method',
-    // Accept self-signed certificates if needed
-    rejectUnauthorized: false,
-  }),
-  timeout: 30000,
-});
+// Helper function to make HTTPS request with custom TLS settings
+const makeHttpsRequest = (options: https.RequestOptions, body?: Buffer): Promise<{ statusCode?: number; statusMessage?: string; headers: any; data: string }> => {
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        resolve({
+          statusCode: res.statusCode,
+          statusMessage: res.statusMessage,
+          headers: res.headers,
+          data
+        });
+      });
+    });
+    
+    req.on('error', reject);
+    req.setTimeout(30000, () => {
+      req.destroy(new Error('Request timeout'));
+    });
+    
+    if (body) {
+      req.write(body);
+    }
+    req.end();
+  });
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -129,18 +147,36 @@ export async function POST(request: NextRequest) {
     const signingKey = getSignatureKey(R2_SECRET_ACCESS_KEY!, dateStamp, 'auto', 's3');
     const signature = hmac(signingKey, stringToSign).toString('hex');
     
-     // Upload to R2 using axios with proper headers
-    await axiosInstance.put(uploadUrl, compressedBuffer, {
-      headers: {
-        'Content-Type': 'image/jpeg',
-        'x-amz-acl': 'public-read',
-        'x-amz-content-sha256': crypto.createHash('sha256').update(compressedBuffer).digest('hex'),
-        'x-amz-date': amzDate,
-        'Authorization': `${algorithm} Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=host;x-amz-acl;x-amz-content-sha256;x-amz-date, Signature=${signature}`
-      },
-      maxBodyLength: Infinity,
-      maxContentLength: Infinity,
-    });
+     // Upload to R2 using native https module with custom TLS
+    const url = new URL(uploadUrl);
+    const headers = {
+      'Content-Type': 'image/jpeg',
+      'x-amz-acl': 'public-read',
+      'x-amz-content-sha256': crypto.createHash('sha256').update(compressedBuffer).digest('hex'),
+      'x-amz-date': amzDate,
+      'Authorization': `${algorithm} Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=host;x-amz-acl;x-amz-content-sha256;x-amz-date, Signature=${signature}`,
+      'Content-Length': compressedBuffer.length.toString()
+    };
+    
+    const options: https.RequestOptions = {
+      hostname: url.hostname,
+      port: url.port || 443,
+      path: url.pathname + url.search,
+      method: 'PUT',
+      headers,
+      // Force TLS 1.2 for Cloudflare R2 compatibility
+      secureProtocol: 'TLSv1_2_method',
+      // Cloudflare R2 uses valid certificates, no need to reject
+      rejectUnauthorized: true,
+      // Increase timeout
+      timeout: 30000
+    };
+    
+    const response = await makeHttpsRequest(options, compressedBuffer);
+    
+    if (response.statusCode !== 200) {
+      throw new Error(`R2 upload failed: ${response.statusCode} ${response.statusMessage}`);
+    }
     
     const publicUrl = `${R2_PUBLIC_URL}/${fileKey}`;
     
