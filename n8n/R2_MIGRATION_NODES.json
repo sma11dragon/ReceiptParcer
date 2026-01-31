@@ -1,0 +1,174 @@
+{
+  "_migration_info": {
+    "title": "ReceiptAI Google Drive to Cloudflare R2 Migration",
+    "date": "2026-01-30",
+    "objective": "Replace Google Drive storage with Cloudflare R2 for commercial scalability",
+    "files_affected": [
+      "n8n/v18 Dashboard - Telegram Chat ID Fix.json"
+    ],
+    "nodes_to_change": [
+      {
+        "action": "REPLACE",
+        "original_node": "Upload to Google Drive (9d2ec14a-3219-43d8-925a-aedb396e20ce)",
+        "new_node": "Upload to R2 (AWS S3 node)",
+        "reason": "R2 is S3-compatible and provides free public storage"
+      },
+      {
+        "action": "DELETE",
+        "original_node": "Make File Shareable (d62b9f40-f7e6-412a-9fc7-ad2b43e37f4f)",
+        "reason": "Not needed - R2 files are public by default when using public bucket"
+      },
+      {
+        "action": "MODIFY",
+        "original_node": "Combine OCR and Drive Data (198a31e9-4c85-4cb8-9d3b-b1323e48efa8)",
+        "changes": "Update JavaScript to generate R2 URLs instead of Google Drive URLs"
+      }
+    ]
+  },
+
+  "nodes_specifications": {
+    "upload_to_r2": {
+      "name": "Upload to R2",
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 1,
+      "position": [-6400, -624],
+      "parameters": {
+        "operation": "upload",
+        "bucket": "receiptai-images",
+        "key": "=receipts/{{ $json.user_id || $('Process Image').first().json.user_id }}/{{ $json.dynamic_filename }}",
+        "binaryData": true,
+        "binaryPropertyName": "={{ Object.keys($input.first().binary)[0] }}",
+        "acl": "public-read",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "aws": {
+          "id": "r2-credentials",
+          "name": "R2 S3 Credentials"
+        }
+      },
+      "notes": "Uploads receipt image to Cloudflare R2 bucket with public-read ACL"
+    },
+
+    "combine_ocr_and_r2_data": {
+      "name": "Combine OCR and R2 Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-5952, -624],
+      "parameters": {
+        "jsCode": "const botToken = $input.first().json.bot_token;\nconst parsingData = $('Parsing Success?').first().json;\nconst processImageData = $('Process Image').first().json;\nconst buildFilenameData = $('Build Filename from Parsed Data').first().json;\n\n// UPDATE THIS: Your R2 account ID from Cloudflare dashboard\nconst R2_ACCOUNT_ID = 'YOUR-ACCOUNT-ID-HERE';\nconst R2_BUCKET_NAME = 'receiptai-images';\nconst R2_PUBLIC_URL = `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.dev`;\n\nconst userId = processImageData.user_id;\nconst filename = buildFilenameData.dynamic_filename;\nconst fileKey = `receipts/${userId}/${filename}`;\nconst r2Url = `${R2_PUBLIC_URL}/${fileKey}`;\n\nreturn [{\n  json: {\n    ...parsingData,\n    chat_id: processImageData.chat_id,\n    user_id: userId,\n    telegram_user_id: processImageData.telegram_user_id,\n    storage_provider: 'r2',\n    drive_file_id: fileKey,\n    receipt_image_url: r2Url,\n    receipt_direct_url: r2Url,\n    file_name: filename,\n    bot_token: botToken\n  }\n}];"
+      },
+      "notes": "Generates R2 public URLs and prepares data for database INSERT"
+    }
+  },
+
+  "connection_changes": {
+    "remove": [
+      {
+        "from": "Build Filename from Parsed Data",
+        "to": "Upload to Google Drive"
+      },
+      {
+        "from": "Upload to Google Drive",
+        "to": "Make File Shareable"
+      },
+      {
+        "from": "Make File Shareable",
+        "to": "Combine OCR and Drive Data"
+      }
+    ],
+    "add": [
+      {
+        "from": "Build Filename from Parsed Data (af7322f5-34cb-4749-9868-98c6642016d2)",
+        "to": "Upload to R2",
+        "type": "main"
+      },
+      {
+        "from": "Upload to R2",
+        "to": "Combine OCR and R2 Data (198a31e9-4c85-4cb8-9d3b-b1323e48efa8)",
+        "type": "main"
+      }
+    ]
+  },
+
+  "setup_instructions": {
+    "cloudflare_setup": [
+      "Create Cloudflare account at https://dash.cloudflare.com/sign-up",
+      "Navigate to R2 in left sidebar",
+      "Create bucket named 'receiptai-images'",
+      "Go to bucket Settings",
+      "Enable 'Public Development URL' under Public Development URL section",
+      "Type 'allow' to confirm public access",
+      "Note your public URL: https://receiptai-images.[account-id].r2.dev",
+      "Create API token: Settings > Manage R2 API Tokens",
+      "Save Access Key ID and Secret Access Key"
+    ],
+    "n8n_setup": [
+      "Add new credential: Settings > Credentials > Add Credential > AWS",
+      "Name: 'R2 S3 Credentials'",
+      "Access Key ID: [Your R2 Access Key]",
+      "Secret Access Key: [Your R2 Secret]",
+      "Region: auto",
+      "Endpoint: https://[account-id].r2.cloudflarestorage.com"
+    ],
+    "workflow_modification": [
+      "Open 'v18 Dashboard - Telegram Chat ID Fix' workflow",
+      "DELETE node: 'Make File Shareable'",
+      "REPLACE node: Delete 'Upload to Google Drive', add AWS S3 node with config above",
+      "MODIFY node: Open 'Combine OCR and Drive Data', replace code with version above",
+      "CONNECT: Build Filename → Upload to R2 → Combine OCR",
+      "Save workflow"
+    ]
+  },
+
+  "database_impact": {
+    "description": "No breaking changes required",
+    "existing_columns": {
+      "drive_file_id": "Now stores R2 file key (receipts/{user_id}/{filename})",
+      "receipt_image_url": "Now stores R2 public URL",
+      "receipt_direct_url": "Same as receipt_image_url for R2"
+    },
+    "optional_changes": [
+      "ALTER TABLE expenses ADD COLUMN storage_provider VARCHAR(20) DEFAULT 'google_drive';",
+      "UPDATE expenses SET storage_provider = 'google_drive' WHERE drive_file_id IS NOT NULL;"
+    ],
+    "backward_compatibility": "Old Google Drive URLs remain valid and accessible"
+  },
+
+  "application_updates": {
+    "environment_variables": [
+      "R2_PUBLIC_URL=https://receiptai-images.[account-id].r2.dev"
+    ],
+    "helper_function": "export function getReceiptImageUrl(expense) {\n  if (expense.storage_provider === 'r2' && expense.drive_file_id) {\n    return `${process.env.R2_PUBLIC_URL}/${expense.drive_file_id}`;\n  }\n  return expense.receipt_image_url;\n}"
+  },
+
+  "verification": {
+    "test_steps": [
+      "Send test receipt via Telegram",
+      "Verify image uploads to R2 dashboard",
+      "Copy URL from Telegram success message",
+      "Open URL in incognito browser (no authentication needed)",
+      "Verify database entry contains R2 URL",
+      "Check web application displays image correctly"
+    ],
+    "success_criteria": [
+      "Image accessible via public URL without login",
+      "No Google Drive dependency",
+      "User isolation maintained (user_id in path)",
+      "Zero cost (within 10 GB free tier)"
+    ]
+  },
+
+  "cost_analysis": {
+    "free_tier": "10 GB storage + 1M operations",
+    "estimated_usage_200_users": "5-10 GB storage",
+    "monthly_cost": "$0",
+    "overage_cost": "$0.015 per GB after 10 GB"
+  },
+
+  "rollback_plan": {
+    "emergency_rollback": "Import backup workflow to restore Google Drive version",
+    "data_preservation": "All R2 receipts remain accessible via stored URLs",
+    "time_to_rollback": "< 5 minutes"
+  }
+}

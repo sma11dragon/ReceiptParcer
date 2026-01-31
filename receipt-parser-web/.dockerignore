@@ -1,0 +1,45 @@
+# See https://docs.docker.com/engine/reference/builder/#dockerignore-file for details
+
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Testing
+tests/
+**/*.test.ts
+**/*.spec.ts
+**/*.test.js
+**/*.spec.js
+playwright.config.ts
+coverage/
+*.log
+
+# Environment
+.env*.local
+.env
+.env.production
+.env.development
+
+# Build output
+.next
+out
+dist
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+debug
+.vscode
+.idea
+
+# Typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Archive directories (created during cleanup)
+archive/

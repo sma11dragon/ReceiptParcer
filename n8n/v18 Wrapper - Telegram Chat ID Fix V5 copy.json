@@ -1,0 +1,446 @@
+{
+  "name": "v18 Wrapper - Telegram Chat ID Fix V5 (Enhanced Debugging)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "telegram-receipts",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "cfd06efb-af1a-4824-ab16-a928fa4ab855",
+      "name": "Webhook - User Bots",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1280,
+        624
+      ],
+      "webhookId": "telegram-multi-bot-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize Telegram webhook data and extract chat_id\nconst input = $input.first().json;\n\nconsole.log('=== WEBHOOK RECEIVED ===');\nconsole.log('Input keys:', Object.keys(input));\nconsole.log('Full input (masked):', JSON.stringify(input, (key, value) => {\n  if (key === 'bot_token' || key.includes('token')) {\n    return value && typeof value === 'string' ? value.substring(0, 10) + '...' : value;\n  }\n  return value;\n}, 2));\n\n// Handle webhook wrapper - data might be in body or at root level\nconst webhookData = input.body || input;\n\nconsole.log('Webhook data keys:', Object.keys(webhookData));\n\n// Extract bot_token from query parameters if available\n// In N8N, webhook query parameters are typically in input.query\nconsole.log('input.query:', input.query);\nconsole.log('input.params:', input.params);\nconsole.log('input.bot_token:', input.bot_token);\n\nlet botTokenFromQuery = input.query?.bot_token || input.params?.bot_token || input.bot_token;\nconsole.log(\"Bot token from query (initial):\", botTokenFromQuery);\n\n// Also check for query string in raw webhook data\nif (!botTokenFromQuery) {\n  console.log(\"WARNING: No bot token found in query params. Checking other locations...\");\n  console.log(\"Checking input.query string:\", JSON.stringify(input.query));\n  console.log(\"Checking input.params string:\", JSON.stringify(input.params));\n  console.log(\"Checking input.queryString:\", input.queryString);\n  console.log(\"Checking input.url:\", input.url);\n  console.log(\"Checking input.rawBody:\", input.rawBody ? \"exists\" : \"missing\");\n  \n  // Try to parse URL if available\n  if (input.url) {\n    console.log(\"Attempting to parse URL:\", input.url);\n    try {\n      const url = new URL(input.url);\n      const urlParams = new URLSearchParams(url.search);\n      botTokenFromQuery = urlParams.get(\"bot_token\") || botTokenFromQuery;\n      console.log(\"Bot token from URL parsing:\", botTokenFromQuery);\n    } catch (err) {\n      console.log(\"Error parsing URL:\", err.message);\n    }\n  }\n  \n  // Check if query is a string that needs parsing\n  if (typeof input.query === \"string\") {\n    console.log(\"input.query is a string, attempting to parse:\", input.query);\n    try {\n      const params = new URLSearchParams(input.query);\n      botTokenFromQuery = params.get(\"bot_token\") || botTokenFromQuery;\n      console.log(\"Bot token from query string parsing:\", botTokenFromQuery);\n    } catch (err) {\n      console.log(\"Error parsing query string:\", err.message);\n    }\n  }\n}\n\n// Extract Telegram update data\nconst update = webhookData;\nconsole.log('Update keys:', Object.keys(update));\n\n// Initialize variables\nlet chatId = null;\nlet telegramUserId = null;\nlet text = null;\nlet callbackData = null;\nlet photo = null;\nlet document = null;\nlet message = null;\nlet callbackQuery = null;\n\n// Check if this is a message update\nif (update.message) {\n  message = update.message;\n  console.log('Message found:', message.message_id);\n  chatId = message.chat?.id;\n  telegramUserId = message.from?.id;\n  text = message.text;\n  photo = message.photo;\n  document = message.document;\n} else if (update.callback_query) {\n  callbackQuery = update.callback_query;\n  console.log('Callback query found:', callbackQuery.id);\n  message = callbackQuery.message;\n  chatId = message?.chat?.id;\n  telegramUserId = callbackQuery.from?.id;\n  callbackData = callbackQuery.data;\n} else if (update.edited_message) {\n  message = update.edited_message;\n  console.log('Edited message found:', message.message_id);\n  chatId = message.chat?.id;\n  telegramUserId = message.from?.id;\n  text = message.text;\n}\n\nconsole.log('Extracted chat_id:', chatId);\nconsole.log('Extracted telegram_user_id:', telegramUserId);\nconsole.log('Extracted text:', text);\nconsole.log('Extracted callback_data:', callbackData);\nconsole.log('Has photo:', !!photo);\nconsole.log('Has document:', !!document);\n\n// Prepare bot token for SQL (escape single quotes by doubling them)\nconst botTokenForSql = botTokenFromQuery ? botTokenFromQuery.replace(/'/g, \"''\") : '';\nconst botTokenRaw = botTokenFromQuery || '';\n\n// Return normalized data for downstream nodes\nreturn {\n  json: {\n    // Core identifiers\n    chat_id: chatId,\n    telegram_user_id: telegramUserId,\n    bot_token_from_webhook: botTokenForSql,\n    bot_token_from_webhook_raw: botTokenRaw,\n    \n    // Message content\n    text: text,\n    callback_data: callbackData,\n    photo: photo,\n    document: document,\n    \n    // Raw data for debugging\n    _raw_input: input,\n    _raw_webhook_data: webhookData\n  }\n};\n"
+      },
+      "id": "7acf16f6-e726-4a39-8062-5c43cbc63cea",
+      "name": "Normalize Telegram Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1056,
+        624
+      ],
+      "notes": "V5: Enhanced debugging for bot token extraction"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT u.id as user_id, u.telegram_bot_token, u.telegram_bot_username \nFROM users u \nWHERE u.telegram_chat_id = {{ $json.chat_id }}\n   OR ('{{ $json.bot_token_from_webhook }}' != '' AND u.telegram_bot_token = '{{ $json.bot_token_from_webhook }}')\nLIMIT 1",
+        "options": {}
+      },
+      "id": "e651b045-fd8e-49cd-835c-162e4517df78",
+      "name": "Lookup User Bot Token",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -832,
+        624
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zHzuThcTrBfWy9Xw",
+          "name": "Postgres account"
+        }
+      },
+      "notes": "FIXED V4: Added quotes around bot_token in empty check"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge normalized data with bot token from database\nconst normalizedData = $('Normalize Telegram Data').first().json;\nconst dbResult = $input.first().json;\n\nconsole.log('=== MERGE BOT TOKEN ===');\nconsole.log('DB Result:', dbResult);\nconsole.log('Bot token from webhook (raw):', normalizedData.bot_token_from_webhook_raw);\nconsole.log('Bot token from webhook (escaped):', normalizedData.bot_token_from_webhook);\nconsole.log('Chat ID from normalized data:', normalizedData.chat_id);\n\n// If database lookup failed but we have bot_token from webhook, use it\nif (!dbResult || !dbResult.telegram_bot_token) {\n  if (normalizedData.bot_token_from_webhook_raw) {\n    console.log('WARNING: No user found for chat_id:', normalizedData.chat_id);\n    console.log('But we have bot_token from webhook. This might be a new user.');\n    console.log('They need to send /start with token to link their account.');\n    \n    // We still can't proceed without a user_id for expense tracking\n    // But we have the bot_token which we can use to send error messages\n    return {\n      json: {\n        ...normalizedData,\n        bot_token: normalizedData.bot_token_from_webhook_raw,  // Use raw for API calls\n        bot_username: null,\n        user_id: null,  // Database user_id (for INSERT into expenses table)\n        error: true,\n        error_message: 'User not registered or bot token not configured. Please send /start with your token.',\n        needs_start_command: true\n      }\n    };\n  } else {\n    console.log('WARNING: No bot token found for chat_id:', normalizedData.chat_id);\n    return {\n      json: {\n        ...normalizedData,\n        bot_token: null,\n        bot_username: null,\n        user_id: null,  // Database user_id (for INSERT into expenses table)\n        error: true,\n        error_message: 'User not registered or bot token not configured'\n      }\n    };\n  }\n}\n\nconsole.log('Bot token found for user:', dbResult.user_id);\n\n// IMPORTANT: user_id here is the database users.id\n// This should be used when inserting expenses: INSERT INTO expenses (user_id, ...) VALUES ($json.user_id, ...)\nreturn {\n  json: {\n    ...normalizedData,\n    bot_token: dbResult.telegram_bot_token,\n    bot_username: dbResult.telegram_bot_username,\n    user_id: dbResult.user_id  // Database user_id for expense inserts\n  }\n};"
+      },
+      "id": "5dfa93f8-1dde-417f-b1b6-dbdb18217c7f",
+      "name": "Merge Bot Token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        624
+      ],
+      "notes": "UPDATED: Better error handling with raw/escaped bot token distinction"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-bot-token",
+              "leftValue": "={{ $json.bot_token }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5a259632-ff52-4792-b597-70c9db57fd5f",
+      "name": "User Registered?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -384,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $json.bot_token }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": {{ $json.chat_id }},\n  \"text\": \"Sorry, your account is not registered or your bot is not configured. Please register at https://receipts.daeit.com.sg\",\n  \"parse_mode\": \"Markdown\"\n}",
+        "options": {}
+      },
+      "id": "995e443d-f44d-4e8f-8bb8-19b88f8d2360",
+      "name": "Send Not Registered Error",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        736,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"ok\": true}",
+        "options": {}
+      },
+      "id": "140a3aa1-9ee3-4643-ba75-0751c2f0d435",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-has-photo",
+              "leftValue": "={{ ($json.photo && $json.photo.length > 0) || ($json.document && $json.document.file_id) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "5ee05b20-6534-41a5-98ae-24e16084c9f7",
+      "name": "Has Image?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -160,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/bot{{ $json.bot_token }}/getFile?file_id={{ $json.photo.slice(-1)[0].file_id }}",
+        "options": {}
+      },
+      "id": "cba877b1-b3f7-423e-905b-52e15656455b",
+      "name": "Get File Path",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        64,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/file/bot{{ $('Merge Bot Token').first().json.bot_token }}/{{ $json.result.file_path }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "ea8e8958-6a8b-4068-a97a-fac9747400d6",
+      "name": "Download File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare data for the main workflow\nconst mergedData = $('Merge Bot Token').first().json;\nconst binaryData = $input.first().binary;\n\nconsole.log('=== PREPARE FOR MAIN WORKFLOW ===');\nconsole.log('Has binary data:', !!binaryData);\nconsole.log('User ID for DB:', mergedData.user_id);\nconsole.log('Chat ID:', mergedData.chat_id);\n\n// Ensure user_id is available for expense INSERT\n// The main workflow should use: INSERT INTO expenses (user_id, chat_id, ...) VALUES ($json.user_id, $json.chat_id, ...)\nreturn {\n  json: {\n    ...mergedData,\n    user_id: mergedData.user_id,  // Database user_id (users.id) - USE THIS FOR EXPENSE INSERTS\n    chat_id: mergedData.chat_id,  // Telegram chat_id - keep for backward compatibility\n    route_to: 'image',\n    is_image: true,\n    file_downloaded: true\n  },\n  binary: binaryData\n};"
+      },
+      "id": "c80ffde2-1148-4a2e-bd22-8a5a36760794",
+      "name": "Prepare for Main Workflow",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle non-image messages (text, callbacks, commands)\nconst mergedData = $('Merge Bot Token').first().json;\n\nconsole.log('=== NON-IMAGE MESSAGE ===');\nconsole.log('Text:', mergedData.text);\nconsole.log('Callback Data:', mergedData.callback_data);\nconsole.log('User ID for DB:', mergedData.user_id);\n\n// Check if this is a callback query (button press)\nconst isCallback = mergedData.callback_data && mergedData.callback_data.length > 0;\n\n// Check if this is a /start command\nconst isStartCommand = mergedData.text && mergedData.text.startsWith('/start');\n\n// Route logic:\n// - callback queries (button presses like payment method selection) -> 'callback'\n// - /start commands -> 'start_command'\n// - everything else (text messages, AI queries) -> 'ai_query'\nconst routeTo = isCallback ? 'callback' : (isStartCommand ? 'start_command' : 'ai_query');\n\nconsole.log('Routing to:', routeTo);\n\n// Ensure user_id is available for any database operations\nreturn {\n  json: {\n    ...mergedData,\n    user_id: mergedData.user_id,  // Database user_id (users.id)\n    chat_id: mergedData.chat_id,  // Telegram chat_id\n    route_to: routeTo,\n    is_image: false\n  }\n};"
+      },
+      "id": "f75cb1cb-1b32-4069-a8b2-c8d02b51944d",
+      "name": "Handle Text Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "XBEK6F9a_j_XQIiWbOneN",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/XBEK6F9a_j_XQIiWbOneN",
+          "cachedResultName": "v18 Multi-User Dashboard"
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "id": "cc59ef38-76ce-4df4-912e-624a70196326",
+      "name": "Execute v16 - Image Processing",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        736,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "XBEK6F9a_j_XQIiWbOneN",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/XBEK6F9a_j_XQIiWbOneN",
+          "cachedResultName": "v18 Multi-User Dashboard"
+        },
+        "options": {}
+      },
+      "id": "c8b54cfc-47fc-4211-a7fe-84eb04653863",
+      "name": "Execute v16 - Text Processing",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        736,
+        624
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - User Bots": {
+      "main": [
+        [
+          {
+            "node": "Normalize Telegram Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Telegram Data": {
+      "main": [
+        [
+          {
+            "node": "Lookup User Bot Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup User Bot Token": {
+      "main": [
+        [
+          {
+            "node": "Merge Bot Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Bot Token": {
+      "main": [
+        [
+          {
+            "node": "User Registered?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "User Registered?": {
+      "main": [
+        [
+          {
+            "node": "Has Image?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Not Registered Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Image?": {
+      "main": [
+        [
+          {
+            "node": "Get File Path",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Text Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get File Path": {
+      "main": [
+        [
+          {
+            "node": "Download File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download File": {
+      "main": [
+        [
+          {
+            "node": "Prepare for Main Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare for Main Workflow": {
+      "main": [
+        [
+          {
+            "node": "Execute v16 - Image Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Not Registered Error": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Text Message": {
+      "main": [
+        [
+          {
+            "node": "Execute v16 - Text Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute v16 - Image Processing": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute v16 - Text Processing": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "21e71ca2-f069-4f2b-a912-b08ab36583b2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1350db236e1416075dd14c3b5954f182baca818956c111b710e2418e31a90adf"
+  },
+  "id": "bVMF7xoKrnw8D1J4eSH0k",
+  "tags": []
+}

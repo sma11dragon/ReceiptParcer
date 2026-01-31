@@ -1,0 +1,4 @@
+"id","username","email","password_hash","location","telegram_chat_id","is_verified","created_at","telegram_bot_username","telegram_bot_token","telegram_user_id"
+1,"siewloong","sma11dragon@gmail.com","$2b$10$sNRrytL0tbM73hcnuUf7m.M3V7iPEPSnUlI52romA...nNYzYfLoC","Singapore","1256744399",False,"2026-01-04 01:27:49.999853+00","DAE123_AntiGravity_TestBot","8300983745:AAE51-GPPWl8MBpA_coQrQUMAYaxeJ2wJdg","1256744399"
+4,"RachelTBot","mienyee.tan@gmail.com","$2b$10$UdoR7MyZpmA8jhvdME7.MOvIBXn7LKQuWUHPpkG8bLBWKuClWzeua","Singapore",NULL,True,"2026-01-18 12:28:29.400101+00","RachelTBot","8194014177:AAG_IWsKrtusA7u1tnSrxCBqPtqxQkoBjT0",NULL
+5,"Williamhill","justforyou2113@126.com","$2b$10$WsG/CHioToeM9EipeP4ZO.DTfJ1yk23ghAOea5.bG2dP.s9IWP52G","柬埔寨",NULL,False,"2026-01-19 13:11:53.426667+00",NULL,NULL,NULL

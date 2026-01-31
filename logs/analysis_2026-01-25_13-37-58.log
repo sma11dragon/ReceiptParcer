@@ -1,0 +1,37 @@
+=========================================
+Daily Query Logs Analysis - 2026-01-25_13-37-58
+=========================================
+Running query logs analysis...
+Using database URL: postgresql://root:****@100.90.68.68:2665/sma11dragon_DB
+
+📊 DAILY QUERY LOGS ANALYSIS
+==============================
+
+1. OVERALL STATISTICS (Last 24 hours)
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+2. EMPTY RESULT QUERIES (Top 10)
+No empty result queries in the last 24 hours.
+
+3. POTENTIAL MISSPELLINGS (Location names)
+No obvious misspellings detected.
+
+4. COMMON FILTERS IN EMPTY RESULTS
+No recurring filter patterns in empty results.
+
+5. HOURLY SUCCESS RATE (Last 24 hours)
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+6. RECOMMENDATIONS
+
+📈 ANALYSIS COMPLETE
+Analysis completed successfully.
+=========================================
+Analysis completed at Sun Jan 25 13:38:02 +08 2026
+=========================================

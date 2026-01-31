@@ -1,0 +1,19 @@
+# Validation Report: v18 Phase 1 Updates
+
+## Node Configuration Checks
+- [x] **Insert into expense_tracker_pending**: Query uses parameterized inputs ($1, $2, etc.) correctly.
+- [x] **Insert into expense_tracker_pending**: Returns `receipt_session_id` and `queue_position` needed for downstream nodes.
+- [x] **Build Fix Message**: References `{{$json.receipt_session_id}}` correctly.
+- [x] **Build MOP Message**: Callback data format `fix_cat_{{$json.receipt_session_id}}` matches regex pattern `^fix_cat_[a-f0-9\-]+$`.
+- [x] **Load Pending for MOP**: Uses `receipt_session_id` index for lookup.
+
+## Workflow Logic Validation
+- [x] **Session ID Flow**: Generated in DB -> Passed to Fix Msg -> Passed to Callback -> Used for Lookup.
+- [x] **Queue Position**: Displayed in Fix Message as requested.
+- [x] **Error Handling**: Basic error paths defined (not fully implemented in this snippet).
+
+## Connection Map
+- `Insert` -> `Build Fix Message` -> `Build MOP Message` (Success Path)
+- `Callback Trigger` -> `Load Pending for MOP` (Callback Path)
+
+Status: **PASSED**

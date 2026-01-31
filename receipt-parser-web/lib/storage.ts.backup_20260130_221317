@@ -1,0 +1,51 @@
+// lib/storage.ts
+// Receipt image URL generation helper
+// Supports both Google Drive (legacy) and R2 (new) storage
+
+/**
+ * Get the public URL for a receipt image
+ * Handles both legacy Google Drive URLs and new R2 URLs
+ */
+export function getReceiptImageUrl(expense: Expense): string {
+  // Check if this receipt uses R2 storage
+  if (expense.storage_provider === 'r2' && expense.drive_file_id) {
+    // Construct R2 URL from file key
+    const r2BaseUrl = process.env.R2_PUBLIC_URL || 'https://receiptai-images.e21ca487c714259a0c1d0ff82c8eff6f.r2.dev';
+    return `${r2BaseUrl}/${expense.drive_file_id}`;
+  }
+  
+  // Fallback to legacy Google Drive URL
+  return expense.receipt_image_url;
+}
+
+/**
+ * Get the direct download URL for a receipt image
+ * For R2, this is the same as the image URL
+ */
+export function getReceiptDirectUrl(expense: Expense): string {
+  // R2 uses the same URL for both view and direct access
+  if (expense.storage_provider === 'r2') {
+    return getReceiptImageUrl(expense);
+  }
+  
+  // Fallback to legacy Google Drive direct URL
+  return expense.receipt_direct_url;
+}
+
+/**
+ * Check if a receipt is stored in R2
+ */
+export function isR2Storage(expense: Expense): boolean {
+  return expense.storage_provider === 'r2';
+}
+
+// TypeScript interface (add to your types file)
+interface Expense {
+  id: number;
+  user_id: number;
+  drive_file_id?: string;
+  receipt_image_url?: string;
+  receipt_direct_url?: string;
+  storage_provider?: 'google_drive' | 'r2';
+  // ... other expense fields
+}

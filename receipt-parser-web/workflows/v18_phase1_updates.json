@@ -1,0 +1,79 @@
+{
+    "name": "v18_phase1_updates",
+    "nodes": [
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "INSERT INTO expenses (\n  user_id, \n  receipt_session_id, \n  queue_position, \n  row_version, \n  content_hash,\n  receipt_image_url,\n  created_at\n) VALUES (\n  $1, \n  gen_random_uuid(), \n  get_next_receipt_number(), \n  1, \n  $2,\n  $3,\n  NOW()\n)\nRETURNING receipt_session_id, queue_position, row_version;"
+            },
+            "name": "Insert into expense_tracker_pending",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "message": "=To verify: session_id={{$json.receipt_session_id}}, queue: {{$json.queue_position}}"
+            },
+            "name": "Build Fix Message",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "message": "=Please select category via callback: fix_cat_{{$json.receipt_session_id}}"
+            },
+            "name": "Build MOP Message",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT * FROM expenses WHERE receipt_session_id = $1"
+            },
+            "name": "Load Pending for MOP",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 1,
+            "position": [
+                450,
+                500
+            ]
+        }
+    ],
+    "connections": {
+        "Insert into expense_tracker_pending": {
+            "main": [
+                [
+                    {
+                        "node": "Build Fix Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Fix Message": {
+            "main": [
+                [
+                    {
+                        "node": "Build MOP Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

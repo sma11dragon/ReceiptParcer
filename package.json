@@ -1,0 +1,80 @@
+{
+  "name": "receipt-parser",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:api": "jest --testPathPattern=api",
+    "test:ocr": "jest --testPathPattern=ocr",
+    "test:bot": "jest --testPathPattern=bot",
+    "test:report": "node tests/scripts/generate-report.js",
+    "report:daily": "node send_daily_report.js",
+    "report:weekly": "node send_weekly_report.js",
+    "report:analyze": "node analyze_query_logs.js"
+  },
+  "dependencies": {
+    "aws4fetch": "^1.0.20",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
+    "lucide-react": "^0.562.0",
+    "next": "16.1.1",
+    "pg": "^8.16.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "recharts": "^3.7.0",
+    "resend": "^6.7.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.41.2",
+    "@types/bcrypt": "^6.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20",
+    "@types/pg": "^8.16.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/supertest": "^6.0.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.1",
+    "jest": "^29.7.0",
+    "jest-environment-node": "^29.7.0",
+    "playwright": "^1.41.2",
+    "supertest": "^6.3.4",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/tests"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.ts",
+      "**/?(*.)+(spec|test).ts"
+    ],
+    "collectCoverageFrom": [
+      "app/**/*.{ts,tsx}",
+      "lib/**/*.{ts}",
+      "!app/**/*.d.ts",
+      "!app/layout.tsx"
+    ],
+    "coverageDirectory": "tests/coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.ts"
+    ]
+  }
+}

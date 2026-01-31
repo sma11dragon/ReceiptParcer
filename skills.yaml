@@ -1,0 +1,6 @@
+skills:
+  - name: n8n
+    path: ./skills/n8n
+    description: >
+      n8n workflow automation skills including nodes, expressions,
+      triggers, credentials, and best practices.
