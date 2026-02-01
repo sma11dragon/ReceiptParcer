@@ -97,18 +97,34 @@ export async function POST(request: NextRequest) {
     // Sanitize filename
     const finalFilename = sanitizeFilename(validatedFilename);
     
-    // Get raw binary body
-    const arrayBuffer = await request.arrayBuffer();
+    // Support both binary and base64 JSON input
+    const contentType = request.headers.get('content-type') || '';
+    let imageBuffer: Buffer;
     
-    if (arrayBuffer.byteLength === 0) {
-      return NextResponse.json(
-        { error: 'Empty body', details: 'No binary data received' },
-        { status: 400 }
-      );
+    if (contentType.includes('application/json')) {
+      // Handle base64 JSON input from n8n
+      const jsonBody = await request.json();
+      if (!jsonBody.imageData || !jsonBody.userId || !jsonBody.filename) {
+        return NextResponse.json(
+          { error: 'Invalid JSON body', details: 'Missing imageData, userId, or filename' },
+          { status: 400 }
+        );
+      }
+      imageBuffer = Buffer.from(jsonBody.imageData, 'base64');
+    } else {
+      // Handle raw binary input
+      const arrayBuffer = await request.arrayBuffer();
+      if (arrayBuffer.byteLength === 0) {
+        return NextResponse.json(
+          { error: 'Empty body', details: 'No binary data received' },
+          { status: 400 }
+        );
+      }
+      imageBuffer = Buffer.from(arrayBuffer);
     }
     
     // Compress image with Sharp
-    const compressedBuffer = await sharp(Buffer.from(arrayBuffer))
+    const compressedBuffer = await sharp(imageBuffer)
       .resize(1024, 1365, {
         fit: 'inside',
         withoutEnlargement: true
@@ -127,7 +143,7 @@ export async function POST(request: NextRequest) {
       })
       .toBuffer();
     
-    console.log('Original size:', arrayBuffer.byteLength, 'Compressed:', compressedBuffer.length);
+    console.log('Original size:', imageBuffer.length, 'Compressed:', compressedBuffer.length);
     
     // Build R2 object key and upload URL
     const fileKey = `receipts/${validatedUserId}/${finalFilename}`;
@@ -210,9 +226,9 @@ export async function POST(request: NextRequest) {
       success: true,
       url: publicUrl,
       fileKey: fileKey,
-      originalSize: arrayBuffer.byteLength,
+      originalSize: imageBuffer.length,
       compressedSize: compressedBuffer.length,
-      savings: Math.round((1 - compressedBuffer.length / arrayBuffer.byteLength) * 100) + '%'
+      savings: Math.round((1 - compressedBuffer.length / imageBuffer.length) * 100) + '%'
     });
     
    } catch (error: unknown) {
