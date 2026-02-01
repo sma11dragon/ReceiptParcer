@@ -1,11 +1,9 @@
-// Build: 2026-01-31 - Force rebuild with new env vars
-export const runtime = 'nodejs'; // Force Node.js runtime to avoid Edge SSL issues
+// Build: 2026-02-02 - Use AWS SDK for better SSL/TLS compatibility with R2
+export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
-import crypto from 'crypto';
-import { format } from 'date-fns';
-import https from 'https';
 
 const R2_ENDPOINT = process.env.R2_ENDPOINT;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
@@ -17,35 +15,17 @@ if (!R2_ENDPOINT || !R2_PUBLIC_URL || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY
   throw new Error('R2 environment variables must be set');
 }
 
-// Helper function to make HTTPS request with custom TLS settings
-const makeHttpsRequest = (options: https.RequestOptions, body?: Buffer): Promise<{ statusCode?: number; statusMessage?: string; headers: any; data: string }> => {
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-      res.on('end', () => {
-        resolve({
-          statusCode: res.statusCode,
-          statusMessage: res.statusMessage,
-          headers: res.headers,
-          data
-        });
-      });
-    });
-    
-    req.on('error', reject);
-    req.setTimeout(30000, () => {
-      req.destroy(new Error('Request timeout'));
-    });
-    
-    if (body) {
-      req.write(body);
-    }
-    req.end();
-  });
-};
+// Create S3 client for Cloudflare R2
+const s3Client = new S3Client({
+  region: 'auto',
+  endpoint: R2_ENDPOINT,
+  credentials: {
+    accessKeyId: R2_ACCESS_KEY_ID,
+    secretAccessKey: R2_SECRET_ACCESS_KEY,
+  },
+  // Force path style for R2 compatibility
+  forcePathStyle: true,
+});
 
 import { validateUserId, validateFilename, createValidationErrorResponse, sanitizeFilename } from '@/lib/validation';
 import { protectRoute } from '@/lib/auth';
@@ -85,7 +65,6 @@ export async function POST(request: NextRequest) {
     const validatedFilename = filenameValidation.sanitizedData?.filename as string;
     
     // Additional security: ensure user can only upload to their own directory
-    // Service accounts and admins can upload for any user
     if (authResult.user && authResult.user.userId !== validatedUserId && 
         authResult.user.role !== 'admin' && authResult.user.role !== 'service') {
       return NextResponse.json(
@@ -104,9 +83,9 @@ export async function POST(request: NextRequest) {
     if (contentType.includes('application/json')) {
       // Handle base64 JSON input from n8n
       const jsonBody = await request.json();
-      if (!jsonBody.imageData || !jsonBody.userId || !jsonBody.filename) {
+      if (!jsonBody.imageData) {
         return NextResponse.json(
-          { error: 'Invalid JSON body', details: 'Missing imageData, userId, or filename' },
+          { error: 'Invalid JSON body', details: 'Missing imageData' },
           { status: 400 }
         );
       }
@@ -145,82 +124,19 @@ export async function POST(request: NextRequest) {
     
     console.log('Original size:', imageBuffer.length, 'Compressed:', compressedBuffer.length);
     
-    // Build R2 object key and upload URL
+    // Build R2 object key
     const fileKey = `receipts/${validatedUserId}/${finalFilename}`;
-    const uploadUrl = `${R2_ENDPOINT}/${R2_BUCKET}/${fileKey}`;
     
-     // Generate AWS SigV4 signature manually
+    // Upload to R2 using AWS SDK
+    const command = new PutObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: fileKey,
+      Body: compressedBuffer,
+      ContentType: 'image/jpeg',
+      ACL: 'public-read',
+    });
     
-    const now = new Date();
-    const amzDate = format(now, 'yyyyMMdd\'T\'HHmmss\'Z\'');
-    const dateStamp = format(now, 'yyyyMMdd');
-    
-     // Create canonical request
-    const canonicalRequest = [
-      'PUT',
-      `/${R2_BUCKET}/${fileKey}`,
-      '',
-      `host:${new URL(R2_ENDPOINT!).hostname}`,
-      `x-amz-acl:public-read`,
-      `x-amz-content-sha256:${crypto.createHash('sha256').update(compressedBuffer).digest('hex')}`,
-      `x-amz-date:${amzDate}`,
-      '',
-      'host;x-amz-acl;x-amz-content-sha256;x-amz-date',
-      crypto.createHash('sha256').update(compressedBuffer).digest('hex')
-    ].join('\n');
-    
-    // Create string to sign
-    const algorithm = 'AWS4-HMAC-SHA256';
-    const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
-    const stringToSign = [
-      algorithm,
-      amzDate,
-      credentialScope,
-      crypto.createHash('sha256').update(canonicalRequest).digest('hex')
-    ].join('\n');
-    
-    // Calculate signature
-    const hmac = (key: Buffer, msg: string) => crypto.createHmac('sha256', key).update(msg).digest();
-    const getSignatureKey = (key: string, dateStamp: string, regionName: string, serviceName: string) => {
-      const kDate = hmac(Buffer.from('AWS4' + key), dateStamp);
-      const kRegion = hmac(kDate, regionName);
-      const kService = hmac(kRegion, serviceName);
-      return hmac(kService, 'aws4_request');
-    };
-    
-    const signingKey = getSignatureKey(R2_SECRET_ACCESS_KEY!, dateStamp, 'auto', 's3');
-    const signature = hmac(signingKey, stringToSign).toString('hex');
-    
-     // Upload to R2 using native https module with custom TLS
-    const url = new URL(uploadUrl);
-    const headers = {
-      'Content-Type': 'image/jpeg',
-      'x-amz-acl': 'public-read',
-      'x-amz-content-sha256': crypto.createHash('sha256').update(compressedBuffer).digest('hex'),
-      'x-amz-date': amzDate,
-      'Authorization': `${algorithm} Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=host;x-amz-acl;x-amz-content-sha256;x-amz-date, Signature=${signature}`,
-      'Content-Length': compressedBuffer.length.toString()
-    };
-    
-    const options: https.RequestOptions = {
-      hostname: url.hostname,
-      port: url.port || 443,
-      path: url.pathname + url.search,
-      method: 'PUT',
-      headers,
-      // Force TLS 1.2 for Cloudflare R2 compatibility
-      secureProtocol: 'TLSv1_2_method',
-      // Temporarily disable cert verification to test SSL handshake
-      rejectUnauthorized: false,
-      // Increase timeout
-      timeout: 30000
-    };
-    
-    const response = await makeHttpsRequest(options, compressedBuffer);
-    
-    if (response.statusCode !== 200) {
-      throw new Error(`R2 upload failed: ${response.statusCode} ${response.statusMessage}`);
-    }
+    await s3Client.send(command);
     
     const publicUrl = `${R2_PUBLIC_URL}/${fileKey}`;
     
@@ -233,16 +149,12 @@ export async function POST(request: NextRequest) {
       savings: Math.round((1 - compressedBuffer.length / imageBuffer.length) * 100) + '%'
     });
     
-   } catch (error: unknown) {
-     console.error('Upload error:', error);
+  } catch (error: unknown) {
+    console.error('Upload error:', error);
     
     let errorMessage = 'Unknown error';
     if (error instanceof Error) {
       errorMessage = error.message;
-    } else if (typeof error === 'object' && error !== null && 'response' in error) {
-      const axiosError = error as { response?: { data?: unknown } };
-      console.error('Error details:', axiosError.response?.data || 'No response data');
-      errorMessage = 'Axios request failed';
     }
     
     return NextResponse.json(
