@@ -210,8 +210,8 @@ export async function POST(request: NextRequest) {
       headers,
       // Force TLS 1.2 for Cloudflare R2 compatibility
       secureProtocol: 'TLSv1_2_method',
-      // Cloudflare R2 uses valid certificates
-      rejectUnauthorized: true,
+      // Temporarily disable cert verification to test SSL handshake
+      rejectUnauthorized: false,
       // Increase timeout
       timeout: 30000
     };
