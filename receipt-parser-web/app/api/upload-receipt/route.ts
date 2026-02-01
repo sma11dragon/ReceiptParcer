@@ -208,7 +208,9 @@ export async function POST(request: NextRequest) {
       path: url.pathname + url.search,
       method: 'PUT',
       headers,
-      // Use default TLS settings for better compatibility
+      // Force TLS 1.2 for Cloudflare R2 compatibility
+      secureProtocol: 'TLSv1_2_method',
+      // Cloudflare R2 uses valid certificates
       rejectUnauthorized: true,
       // Increase timeout
       timeout: 30000
