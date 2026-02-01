@@ -47,27 +47,53 @@ const makeHttpsRequest = (options: https.RequestOptions, body?: Buffer): Promise
   });
 };
 
+import { validateUserId, validateFilename, createValidationErrorResponse, sanitizeFilename } from '@/lib/validation';
+import { protectRoute } from '@/lib/auth';
+
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get('userId');
-    let filename = request.nextUrl.searchParams.get('filename');
+    // Validate authentication
+    const authResult = await protectRoute(request, 'user');
+    if (!authResult.isAuthenticated && authResult.response) {
+      return authResult.response;
+    }
     
-    if (!userId || !filename) {
+    // Validate query parameters
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    const filename = searchParams.get('filename');
+    
+    const errors: string[] = [];
+    
+    // Validate user ID
+    const userIdValidation = validateUserId(userId);
+    if (!userIdValidation.isValid) {
+      errors.push(...userIdValidation.errors);
+    }
+    
+    // Validate filename
+    const filenameValidation = validateFilename(filename);
+    if (!filenameValidation.isValid) {
+      errors.push(...filenameValidation.errors);
+    }
+    
+    if (errors.length > 0) {
+      return createValidationErrorResponse(errors);
+    }
+    
+    const validatedUserId = userIdValidation.sanitizedData?.userId as string;
+    const validatedFilename = filenameValidation.sanitizedData?.filename as string;
+    
+    // Additional security: ensure user can only upload to their own directory
+    if (authResult.user && authResult.user.userId !== validatedUserId && authResult.user.role !== 'admin') {
       return NextResponse.json(
-        { error: 'Missing params', details: 'Need userId and filename' },
-        { status: 400 }
+        { error: 'Forbidden', details: 'You can only upload receipts for your own account' },
+        { status: 403 }
       );
     }
     
-    // Validate and sanitize filename
-    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-    if (sanitizedFilename !== filename) {
-      return NextResponse.json(
-        { error: 'Invalid filename', details: 'Filename contains invalid characters' },
-        { status: 400 }
-      );
-    }
-    filename = sanitizedFilename;
+    // Sanitize filename
+    const finalFilename = sanitizeFilename(validatedFilename);
     
     // Get raw binary body
     const arrayBuffer = await request.arrayBuffer();
@@ -102,7 +128,7 @@ export async function POST(request: NextRequest) {
     console.log('Original size:', arrayBuffer.byteLength, 'Compressed:', compressedBuffer.length);
     
     // Build R2 object key and upload URL
-    const fileKey = `receipts/${userId}/${filename}`;
+    const fileKey = `receipts/${validatedUserId}/${finalFilename}`;
     const uploadUrl = `${R2_ENDPOINT}/${R2_BUCKET}/${fileKey}`;
     
      // Generate AWS SigV4 signature manually
