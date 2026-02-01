@@ -1,0 +1,415 @@
+{
+  "name": "v18 Dashboard - R2 Direct Upload",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"chat_id\": 1256744399, \"user_id\": 1, \"telegram_user_id\": 1256744399, \"bot_token\": \"test_token\", \"route_to\": \"callback\", \"is_image\": false, \"callback_data\": \"mop_own_110\", \"callback_query_id\": \"5397676095477463767\", \"text\": \"\", \"message_id\": 208}"
+      },
+      "id": "d042fb55-6a89-4cb5-a928-f720dac82703",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -10432,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "033b0386-0691-43f9-ad0a-d6b66ce8cab9",
+                    "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "callback",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "1118f33b-1217-486b-a5ac-525e7b255158",
+                    "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "text_fix",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "09693f32-64de-421b-ad42-4987b4a2e415",
+                    "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "ai_query",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c2d6a2a9-3b8c-4e3b-8e5f-2b9d5b4e7a1d",
+                    "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        }
+      },
+      "id": "Route by Type",
+      "name": "Route by Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -10240,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.is_image }}",
+              "operation": "equals",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "id": "Is Image?",
+      "name": "Is Image?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -10048,
+        1296
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "fields": {
+          "values": [
+            {
+              "fieldId": "dynamic_filename",
+              "fieldValue": "={{ $json.telegram_user_id }}_{{ $json.message_id }}.jpg"
+            }
+          ]
+        }
+      },
+      "id": "Set Filename",
+      "name": "Set Filename",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -9856,
+        1296
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/bot{{ $json.bot_token }}/getFile",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "none",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "{\"file_id\": \"{{ $json.photo_file_id }}\"}",
+        "options": {}
+      },
+      "id": "Get File Path",
+      "name": "Get File Path",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -9664,
+        1296
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/file/bot{{ $json.bot_token }}/{{ $json.result.file_path }}",
+        "responseFormat": "file",
+        "options": {}
+      },
+      "id": "Download Image",
+      "name": "Download Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -9472,
+        1296
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Manual AWS SigV4 signing for Cloudflare R2\nconst crypto = require('crypto');\nconst now = new Date();\n\n// Format dates for AWS signature\nconst amzDate = now.toISOString().replace(/[\\-:]/g, '').split('.')[0] + 'Z';\nconst dateStamp = amzDate.split('T')[0];\n\n// Get image buffer from binary data\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const imageBuffer = item.binary.data.data;\n  const userId = item.json.user_id;\n  const filename = item.json.dynamic_filename;\n  \n  const fileKey = `receipts/${userId}/${filename}`;\n  const bucket = 'receiptai-images';\n  const endpoint = 'https://e21ca487c714259a0c1d0ff82c8e8ff6f.r2.cloudflarestorage.com';\n  const uploadUrl = `${endpoint}/${bucket}/${fileKey}`;\n  \n  // Calculate SHA256 of payload\n  const payloadHash = crypto.createHash('sha256').update(imageBuffer).digest('hex');\n  \n  // Create canonical request\n  const canonicalRequest = [\n    'PUT',\n    `/${bucket}/${fileKey}`,\n    '',\n    'host:e21ca487c714259a0c1d0ff82c8e8ff6f.r2.cloudflarestorage.com',\n    'x-amz-acl:public-read',\n    `x-amz-content-sha256:${payloadHash}`,\n    `x-amz-date:${amzDate}`,\n    '',\n    'host;x-amz-acl;x-amz-content-sha256;x-amz-date',\n    payloadHash\n  ].join('\\n');\n  \n  // Create string to sign\n  const algorithm = 'AWS4-HMAC-SHA256';\n  const credentialScope = `${dateStamp}/auto/s3/aws4_request`;\n  const stringToSign = [\n    algorithm,\n    amzDate,\n    credentialScope,\n    crypto.createHash('sha256').update(canonicalRequest).digest('hex')\n  ].join('\\n');\n  \n  // Calculate signature\n  const hmac = (key, msg) => crypto.createHmac('sha256', key).update(msg).digest();\n  const getSignatureKey = (key, dateStamp, regionName, serviceName) => {\n    const kDate = hmac(Buffer.from('AWS4' + key), dateStamp);\n    const kRegion = hmac(kDate, regionName);\n    const kService = hmac(kRegion, serviceName);\n    return hmac(kService, 'aws4_request');\n  };\n  \n  // Get credentials from environment variables\n  const accessKeyId = $env.R2_ACCESS_KEY_ID;\n  const secretAccessKey = $env.R2_SECRET_ACCESS_KEY;\n  \n  if (!accessKeyId || !secretAccessKey) {\n    throw new Error('R2 credentials not found in environment variables');\n  }\n  \n  const signingKey = getSignatureKey(secretAccessKey, dateStamp, 'auto', 's3');\n  const signature = hmac(signingKey, stringToSign).toString('hex');\n  \n  // Return signed request details\n  results.push({\n    json: {\n      ...item.json,\n      uploadUrl,\n      fileKey,\n      headers: {\n        'Content-Type': 'image/jpeg',\n        'x-amz-acl': 'public-read',\n        'x-amz-content-sha256': payloadHash,\n        'x-amz-date': amzDate,\n        'Authorization': `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=host;x-amz-acl;x-amz-content-sha256;x-amz-date, Signature=${signature}`\n      },\n      imageBuffer: imageBuffer,\n      publicUrl: `https://receiptimages.daeit.com.sg/${fileKey}`\n    },\n    binary: item.binary\n  });\n}\n\nreturn results;"
+      },
+      "id": "sign-r2-request",
+      "name": "Sign R2 Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -9280,
+        1296
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.uploadUrl }}",
+        "method": "PUT",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.headers['Content-Type'] }}"
+            },
+            {
+              "name": "x-amz-acl",
+              "value": "={{ $json.headers['x-amz-acl'] }}"
+            },
+            {
+              "name": "x-amz-content-sha256",
+              "value": "={{ $json.headers['x-amz-content-sha256'] }}"
+            },
+            {
+              "name": "x-amz-date",
+              "value": "={{ $json.headers['x-amz-date'] }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.Authorization }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawBody": "={{ $json.imageBuffer }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "upload-to-r2-direct",
+      "name": "Upload to R2 Direct",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -9088,
+        1296
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "fields": {
+          "values": [
+            {
+              "fieldId": "image_url",
+              "fieldValue": "={{ $json.publicUrl }}"
+            }
+          ]
+        }
+      },
+      "id": "Set Image URL",
+      "name": "Set Image URL",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -8896,
+        1296
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Route by Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Type": {
+      "main": [
+        [
+          {
+            "node": "Is Image?",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Is Image?": {
+      "main": [
+        [
+          {
+            "node": "Set Filename",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Filename": {
+      "main": [
+        [
+          {
+            "node": "Get File Path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get File Path": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Sign R2 Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign R2 Request": {
+      "main": [
+        [
+          {
+            "node": "Upload to R2 Direct",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to R2 Direct": {
+      "main": [
+        [
+          {
+            "node": "Set Image URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "chat_id": 1256744399,
+          "user_id": 1,
+          "telegram_user_id": 1256744399,
+          "bot_token": "8300983745:AAE51-GPPWl8MBpA_coQrQUMAYaxeJ2wJdg",
+          "route_to": "image",
+          "is_image": true,
+          "callback_data": null,
+          "callback_query_id": null,
+          "text": "",
+          "message_id": 461
+        },
+        "binary": {
+          "data": {
+            "mimeType": "application/octet-stream",
+            "fileExtension": "jpg",
+            "data": "filesystem-v2",
+            "directory": "https://api.telegram.org/file/bot8300983745:AAE51-GPPWl8MBpA_coQrQUMAYaxeJ2wJdg/photos/file_26.jpg",
+            "fileName": "file_26.jpg",
+            "id": "filesystem-v2:workflows/bVMF7xoKrnw8D1J4eSH0k/executions/7892/binary_data/26840d25-6a37-4c3b-b6d5-b39d958e3625",
+            "fileSize": "157 kB"
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  }
+}

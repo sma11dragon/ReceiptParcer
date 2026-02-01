@@ -1,0 +1,21 @@
+{
+  "name": "google-vision-proxy",
+  "version": "1.0.0",
+  "description": "Secure proxy server for Google Vision API",
+  "main": "google-vision-proxy.js",
+  "scripts": {
+    "start": "node google-vision-proxy.js",
+    "dev": "nodemon google-vision-proxy.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "express-rate-limit": "^7.1.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

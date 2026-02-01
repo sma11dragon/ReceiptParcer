@@ -1,0 +1,118 @@
+{
+  "name": "Direct R2 Upload Backup",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"chat_id\": 1256744399, \"user_id\": 1, \"telegram_user_id\": 1256744399, \"bot_token\": \"test_token\", \"route_to\": \"callback\", \"is_image\": true, \"image_url\": \"https://example.com/test.jpg\", \"filename\": \"test.jpg\"}"
+      },
+      "id": "trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.image_url }}",
+        "responseFormat": "file",
+        "options": {}
+      },
+      "id": "download",
+      "name": "Download Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Manual AWS SigV4 signing for Cloudflare R2\nconst crypto = require('crypto');\nconst now = new Date();\n\n// Format dates for AWS signature\nconst amzDate = now.toISOString().replace(/[\\-:]/g, '').split('.')[0] + 'Z';\nconst dateStamp = amzDate.split('T')[0];\n\n// Get image buffer\nconst imageBuffer = $input.first().binary.data.data;\nconst fileKey = `receipts/${$json.user_id}/${$json.filename}`;\nconst bucket = 'receiptai-images';\nconst endpoint = 'https://e21ca487c714259a0c1d0ff82c8e8ff6f.r2.cloudflarestorage.com';\nconst uploadUrl = `${endpoint}/${bucket}/${fileKey}`;\n\n// Calculate SHA256 of payload\nconst payloadHash = crypto.createHash('sha256').update(imageBuffer).digest('hex');\n\n// Create canonical request\nconst canonicalRequest = [\n  'PUT',\n  `/${bucket}/${fileKey}`,\n  '',\n  `host:e21ca487c714259a0c1d0ff82c8e8ff6f.r2.cloudflarestorage.com`,\n  `x-amz-acl:public-read`,\n  `x-amz-content-sha256:${payloadHash}`,\n  `x-amz-date:${amzDate}`,\n  '',\n  'host;x-amz-acl;x-amz-content-sha256;x-amz-date',\n  payloadHash\n].join('\\n');\n\n// Create string to sign\nconst algorithm = 'AWS4-HMAC-SHA256';\nconst credentialScope = `${dateStamp}/auto/s3/aws4_request`;\nconst stringToSign = [\n  algorithm,\n  amzDate,\n  credentialScope,\n  crypto.createHash('sha256').update(canonicalRequest).digest('hex')\n].join('\\n');\n\n// Calculate signature\nconst hmac = (key, msg) => crypto.createHmac('sha256', key).update(msg).digest();\nconst getSignatureKey = (key, dateStamp, regionName, serviceName) => {\n  const kDate = hmac(Buffer.from('AWS4' + key), dateStamp);\n  const kRegion = hmac(kDate, regionName);\n  const kService = hmac(kRegion, serviceName);\n  return hmac(kService, 'aws4_request');\n};\n\nconst accessKeyId = $env.R2_ACCESS_KEY_ID;\nconst secretAccessKey = $env.R2_SECRET_ACCESS_KEY;\nconst signingKey = getSignatureKey(secretAccessKey, dateStamp, 'auto', 's3');\nconst signature = hmac(signingKey, stringToSign).toString('hex');\n\n// Return signed request details\nreturn [{\n  json: {\n    uploadUrl,\n    fileKey,\n    headers: {\n      'Content-Type': 'image/jpeg',\n      'x-amz-acl': 'public-read',\n      'x-amz-content-sha256': payloadHash,\n      'x-amz-date': amzDate,\n      'Authorization': `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=host;x-amz-acl;x-amz-content-sha256;x-amz-date, Signature=${signature}`\n    },\n    body: imageBuffer,\n    publicUrl: `https://receiptimages.daeit.com.sg/${fileKey}`\n  }\n}];"
+      },
+      "id": "sign",
+      "name": "Sign R2 Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.uploadUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.headers['Content-Type'] }}"
+            },
+            {
+              "name": "x-amz-acl",
+              "value": "={{ $json.headers['x-amz-acl'] }}"
+            },
+            {
+              "name": "x-amz-content-sha256",
+              "value": "={{ $json.headers['x-amz-content-sha256'] }}"
+            },
+            {
+              "name": "x-amz-date",
+              "value": "={{ $json.headers['x-amz-date'] }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.Authorization }}"
+            }
+          ]
+        },
+        "options": {
+          "bodyContentType": "raw",
+          "rawBody": "={{ $json.body }}"
+        }
+      },
+      "id": "upload",
+      "name": "Upload to R2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [600, 0]
+    }
+  ],
+  "connections": {
+    "trigger": {
+      "main": [
+        [
+          {
+            "node": "download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "download": {
+      "main": [
+        [
+          {
+            "node": "sign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sign": {
+      "main": [
+        [
+          {
+            "node": "upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1
+}

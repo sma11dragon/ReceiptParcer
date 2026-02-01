@@ -1,0 +1,39 @@
+// Create a minimal valid JPEG image (1x1 pixel)
+const jpegData = Buffer.from([
+  0xFF, 0xD8, 0xFF, 0xE0, // SOI + APP0 marker
+  0x00, 0x10, // APP0 length
+  0x4A, 0x46, 0x49, 0x46, 0x00, // "JFIF" + null
+  0x01, 0x01, // version
+  0x00, // units
+  0x00, 0x01, // X density
+  0x00, 0x01, // Y density
+  0x00, 0x00, // thumbnail
+  0xFF, 0xDB, 0x00, 0x43, // DQT
+  0x00, // table info
+  // Quantization table data (64 bytes of zeros for simplicity)
+  ...Array(64).fill(0x00),
+  0xFF, 0xC0, 0x00, 0x0B, // SOF0
+  0x08, // precision
+  0x00, 0x01, // height
+  0x00, 0x01, // width
+  0x01, // components
+  0x01, 0x11, 0x00, // component 1
+  0xFF, 0xC4, 0x00, 0x14, // DHT
+  0x00, // table info
+  0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0xFF, 0xDA, 0x00, 0x08, // SOS
+  0x01, 0x01, 0x00, 0x00, 0x3F, 0x00,
+  0xFF, 0xD9 // EOI
+]);
+
+const fs = require('fs');
+const path = require('path');
+const testJpegPath = path.join(__dirname, 'test_jpeg.jpg');
+fs.writeFileSync(testJpegPath, jpegData);
+
+console.log('Test JPEG created:', testJpegPath);
+console.log('JPEG size:', jpegData.length, 'bytes');
+console.log('\nTest command:');
+console.log('curl -X POST "https://receipt-parcer.vercel.app/api/upload-receipt?userId=999&filename=test_axios.jpg" \\');
+console.log('  -H "Content-Type: image/jpeg" \\');
+console.log('  --data-binary @test_jpeg.jpg');

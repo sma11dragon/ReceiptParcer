@@ -173,7 +173,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://vision.googleapis.com/v1/images:annotate?key=AIzaSyC9SlDURPMIRDFIdKTAkH5ZmSwmum8cOy0",
+        "url": "https://vision.googleapis.com/v1/images:annotate?key=AIzaSyAdy2k4kTr8Z-Gi0NMK8nk9X957BwmcKCc",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.vision_payload) }}",

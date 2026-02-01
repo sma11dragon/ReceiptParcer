@@ -85,7 +85,9 @@ export async function POST(request: NextRequest) {
     const validatedFilename = filenameValidation.sanitizedData?.filename as string;
     
     // Additional security: ensure user can only upload to their own directory
-    if (authResult.user && authResult.user.userId !== validatedUserId && authResult.user.role !== 'admin') {
+    // Service accounts and admins can upload for any user
+    if (authResult.user && authResult.user.userId !== validatedUserId && 
+        authResult.user.role !== 'admin' && authResult.user.role !== 'service') {
       return NextResponse.json(
         { error: 'Forbidden', details: 'You can only upload receipts for your own account' },
         { status: 403 }
@@ -190,9 +192,7 @@ export async function POST(request: NextRequest) {
       path: url.pathname + url.search,
       method: 'PUT',
       headers,
-      // Force TLS 1.2 for Cloudflare R2 compatibility
-      secureProtocol: 'TLSv1_2_method',
-      // Cloudflare R2 uses valid certificates, no need to reject
+      // Use default TLS settings for better compatibility
       rejectUnauthorized: true,
       // Increase timeout
       timeout: 30000

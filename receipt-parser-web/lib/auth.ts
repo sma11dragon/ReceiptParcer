@@ -8,7 +8,7 @@ import * as bcrypt from 'bcryptjs';
 export interface UserPayload {
     userId: string;
     email?: string;
-    role: 'user' | 'admin';
+    role: 'user' | 'admin' | 'service';
     exp?: number;
     iat?: number;
 }
@@ -77,7 +77,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 /**
  * Generate JWT token for a user
  */
-export function generateToken(userId: string, email?: string, role: 'user' | 'admin' = 'user'): string {
+export function generateToken(userId: string, email?: string, role: 'user' | 'admin' | 'service' = 'user'): string {
     const payload: UserPayload = {
         userId,
         email,
@@ -298,7 +298,7 @@ export function sanitizeAuthInput(input: string): string {
 export function createAuthSuccessResponse(
     userId: string,
     email?: string,
-    role: 'user' | 'admin' = 'user',
+    role: 'user' | 'admin' | 'service' = 'user',
     additionalData: Record<string, any> = {}
 ): NextResponse {
     const token = generateToken(userId, email, role);
