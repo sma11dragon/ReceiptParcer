@@ -141,26 +141,24 @@ export async function POST(request: NextRequest) {
     // Build R2 object key
     const fileKey = `receipts/${validatedUserId}/${finalFilename}`;
     
-    // Upload to R2 using AWS SDK
-    const command = new PutObjectCommand({
-      Bucket: R2_BUCKET,
-      Key: fileKey,
-      Body: compressedBuffer,
-      ContentType: 'image/jpeg',
-      ACL: 'public-read',
-    });
-    
-    await s3Client.send(command);
+    // TEST: Skip actual upload, just return what would happen
+    console.log('TEST MODE: Would upload to R2:');
+    console.log('  Bucket:', R2_BUCKET);
+    console.log('  Endpoint:', R2_ENDPOINT);
+    console.log('  FileKey:', fileKey);
+    console.log('  Buffer size:', compressedBuffer.length);
     
     const publicUrl = `${R2_PUBLIC_URL}/${fileKey}`;
     
     return NextResponse.json({ 
       success: true,
+      testMode: true,
       url: publicUrl,
       fileKey: fileKey,
       originalSize: imageBuffer.length,
       compressedSize: compressedBuffer.length,
-      savings: Math.round((1 - compressedBuffer.length / imageBuffer.length) * 100) + '%'
+      savings: Math.round((1 - compressedBuffer.length / imageBuffer.length) * 100) + '%',
+      message: 'R2 upload skipped for testing'
     });
     
   } catch (error: unknown) {
