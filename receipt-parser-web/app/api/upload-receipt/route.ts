@@ -150,11 +150,9 @@ export async function POST(request: NextRequest) {
       console.error('R2 upload failed:', r2Error);
       uploadError = r2Error instanceof Error ? r2Error.message : 'Unknown R2 error';
       
-      // Fallback: Store in Vercel's temporary storage (./tmp folder)
+      // Fallback: Store in Vercel's temporary storage (/tmp folder)
       // This is a temporary solution until R2 SSL issue is resolved
-      const fs = require('fs');
-      const path = require('path');
-      const tmpDir = path.join(process.cwd(), 'tmp', 'receipts', validatedUserId);
+      const tmpDir = path.join('/tmp', 'receipts', validatedUserId);
       
       // Ensure directory exists
       if (!fs.existsSync(tmpDir)) {
