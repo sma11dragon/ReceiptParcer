@@ -1,11 +1,9 @@
-// Build: 2026-02-02 - Use AWS SDK with custom TLS handling for R2
+// Build: 2026-02-02 - Use AWS SDK default HTTP handler for R2
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { NodeHttpHandler } from '@aws-sdk/node-http-handler';
 import sharp from 'sharp';
-import https from 'https';
 
 const R2_ENDPOINT = process.env.R2_ENDPOINT;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
@@ -17,13 +15,7 @@ if (!R2_ENDPOINT || !R2_PUBLIC_URL || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY
   throw new Error('R2 environment variables must be set');
 }
 
-// Create custom HTTPS agent with TLS 1.2
-const httpsAgent = new https.Agent({
-  secureProtocol: 'TLSv1_2_method',
-  rejectUnauthorized: true,
-});
-
-// Create S3 client for Cloudflare R2 with custom HTTP handler
+// Create S3 client for Cloudflare R2 with default HTTP handler
 const s3Client = new S3Client({
   region: 'auto',
   endpoint: R2_ENDPOINT,
@@ -33,12 +25,6 @@ const s3Client = new S3Client({
   },
   // Force path style for R2 compatibility
   forcePathStyle: true,
-  // Use custom request handler with TLS 1.2
-  requestHandler: new NodeHttpHandler({
-    httpsAgent,
-    connectionTimeout: 30000,
-    socketTimeout: 30000,
-  }),
 });
 
 import { validateUserId, validateFilename, createValidationErrorResponse, sanitizeFilename } from '@/lib/validation';
