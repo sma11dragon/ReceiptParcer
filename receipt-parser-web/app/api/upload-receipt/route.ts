@@ -4,6 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
+import fs from 'fs';
+import path from 'path';
 
 const R2_ENDPOINT = process.env.R2_ENDPOINT;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
@@ -127,18 +129,47 @@ export async function POST(request: NextRequest) {
     // Build R2 object key
     const fileKey = `receipts/${validatedUserId}/${finalFilename}`;
     
-    // Upload to R2 using AWS SDK
-    const command = new PutObjectCommand({
-      Bucket: R2_BUCKET,
-      Key: fileKey,
-      Body: compressedBuffer,
-      ContentType: 'image/jpeg',
-      ACL: 'public-read',
-    });
+    let publicUrl: string;
+    let uploadSuccess = false;
+    let uploadError: string | null = null;
     
-    await s3Client.send(command);
-    
-    const publicUrl = `${R2_PUBLIC_URL}/${fileKey}`;
+    // Try R2 upload first
+    try {
+      const command = new PutObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: fileKey,
+        Body: compressedBuffer,
+        ContentType: 'image/jpeg',
+        ACL: 'public-read',
+      });
+      
+      await s3Client.send(command);
+      publicUrl = `${R2_PUBLIC_URL}/${fileKey}`;
+      uploadSuccess = true;
+    } catch (r2Error) {
+      console.error('R2 upload failed:', r2Error);
+      uploadError = r2Error instanceof Error ? r2Error.message : 'Unknown R2 error';
+      
+      // Fallback: Store in Vercel's temporary storage (./tmp folder)
+      // This is a temporary solution until R2 SSL issue is resolved
+      const fs = require('fs');
+      const path = require('path');
+      const tmpDir = path.join(process.cwd(), 'tmp', 'receipts', validatedUserId);
+      
+      // Ensure directory exists
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+      
+      const tmpPath = path.join(tmpDir, finalFilename);
+      fs.writeFileSync(tmpPath, compressedBuffer);
+      
+      // Use Vercel's public URL (this won't persist across deployments!)
+      publicUrl = `/api/tmp-receipts/${validatedUserId}/${finalFilename}`;
+      
+      console.log('Stored image locally at:', tmpPath);
+      console.log('WARNING: Images stored locally will not persist across Vercel deployments!');
+    }
     
     return NextResponse.json({ 
       success: true,
@@ -146,7 +177,10 @@ export async function POST(request: NextRequest) {
       fileKey: fileKey,
       originalSize: imageBuffer.length,
       compressedSize: compressedBuffer.length,
-      savings: Math.round((1 - compressedBuffer.length / imageBuffer.length) * 100) + '%'
+      savings: Math.round((1 - compressedBuffer.length / imageBuffer.length) * 100) + '%',
+      r2UploadSuccess: uploadSuccess,
+      r2Error: uploadError,
+      warning: uploadSuccess ? undefined : 'Image stored locally due to R2 SSL issues. Images may not persist across deployments.'
     });
     
   } catch (error: unknown) {
