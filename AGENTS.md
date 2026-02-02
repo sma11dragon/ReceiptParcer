@@ -151,3 +151,17 @@ NODE_ENV=development
 - **ESLint**: `receipt-parser-web/eslint.config.mjs` (uses eslint-config-next)
 - **TypeScript**: `receipt-parser-web/tsconfig.json` (strict mode, `@/*` paths)
 - **Jest**: Configured in `package.json` with ts-jest preset
+
+## Troubleshooting
+
+### R2 Upload SSL Errors
+If you see `SSL routines:ssl3_read_bytes:ssl/tls alert handshake failure`:
+
+1. **Check R2 credentials first** - Most common cause is invalid/expired API keys
+   - Go to Cloudflare R2 → Manage API Tokens
+   - Verify tokens have "Object Read & Write" permissions
+   - Check Vercel env vars match exactly
+
+2. **See full guide**: `R2_TROUBLESHOOTING.md`
+
+3. **Quick test**: Temporarily skip R2 upload in route.ts to isolate if it's n8n→Vercel or Vercel→R2 issue
