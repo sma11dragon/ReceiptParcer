@@ -130,3 +130,32 @@ If all else fails:
 1. Check Cloudflare R2 status: https://www.cloudflarestatus.com/
 2. Test with AWS CLI: `aws s3 ls --endpoint-url=<r2-endpoint> s3://<bucket>`
 3. Contact Cloudflare support with your account ID
+
+## Temporary Workaround (Active Feb 2, 2026)
+
+**Status:** SSL handshake issues persist between Vercel and Cloudflare R2.
+**Current Solution:** Images stored locally in `/tmp` on Vercel server.
+**⚠️ WARNING:** This is TEMPORARY - images will be lost on next deployment!
+
+### What We Tried (All Failed):
+- TLS 1.2 forced protocol
+- AWS SDK default HTTP handler
+- Fresh R2 API credentials
+- Multiple TLS configurations
+
+### Root Cause:
+Infrastructure-level SSL/TLS incompatibility between Vercel's Node.js runtime and Cloudflare R2.
+
+### Immediate Action Required:
+**Contact Cloudflare Support:**
+- Email: support@cloudflare.com
+- Account ID: `e21ca487c714259a0c1d0ff82c8e8ff6f`
+- Include error logs showing: `ssl3_read_bytes:ssl/tls alert handshake failure`
+- Mention started Feb 1, 2026
+
+### Alternative Permanent Solutions:
+1. **Switch to AWS S3** (recommended)
+2. **Use Vercel Blob Storage** (native Vercel solution)
+3. **Upload directly from n8n** (bypass Vercel)
+
+**DO NOT rely on /tmp storage for production use!**
