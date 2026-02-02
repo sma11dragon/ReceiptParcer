@@ -48,7 +48,33 @@ https://<account-id>.r2.cloudflarestorage.com
 - ❌ Using R2_PUBLIC_URL as the endpoint
 - ❌ Using Cloudflare API token instead of R2 S3 credentials
 
-### 4. Vercel Function Timeout
+### 4. Custom Domain SSL Issues (CRITICAL)
+
+**Symptom:** SSL handshake failure when using custom domain for R2_PUBLIC_URL.
+
+**Real Error:** `ssl3_read_bytes:ssl/tls alert handshake failure`
+
+**Cause:** Custom domains (e.g., `images.yourdomain.com`) require proper SSL certificate configuration with Cloudflare R2. The r2.dev subdomain has built-in SSL that works immediately.
+
+**Solution:**
+**Use r2.dev URL instead of custom domain:**
+- ❌ DON'T: `https://images.yourdomain.com`
+- ✅ DO: `https://<account-id>.r2.dev`
+
+**To get your r2.dev URL:**
+1. Cloudflare Dashboard → R2 → Your Bucket
+2. Look for "Public URL" or "r2.dev subdomain"
+3. It looks like: `https://pub-xxxxx.r2.dev`
+
+**If you MUST use custom domain:**
+1. Cloudflare SSL/TLS → Edge Certificates → Enable Universal SSL
+2. Add CNAME record in DNS pointing to R2
+3. Configure custom domain in R2 bucket settings
+4. Wait for SSL certificate to generate (can take 24 hours)
+
+**Case Study:** ReceiptAI switched from custom domain `receiptimages.daeit.com.sg` back to r2.dev URL and uploads immediately worked.
+
+### 5. Vercel Function Timeout
 
 **Symptom:** Upload fails with timeout, not SSL error.
 
