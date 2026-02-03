@@ -52,7 +52,7 @@ export function validateFilename(filename: string | null): ValidationResult {
     
     if (!filename || filename.trim() === '') {
         errors.push('Filename is required');
-    } else if (!/^[a-zA-Z0-9._-]+$/.test(filename)) {
+    } else if (!/^[a-zA-Z0-9._,-]+$/.test(filename)) {
         errors.push('Filename contains invalid characters');
     } else if (filename.length > 255) {
         errors.push('Filename too long');
