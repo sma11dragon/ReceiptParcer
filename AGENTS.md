@@ -152,28 +152,80 @@ NODE_ENV=development
 - **TypeScript**: `receipt-parser-web/tsconfig.json` (strict mode, `@/*` paths)
 - **Jest**: Configured in `package.json` with ts-jest preset
 
-## Current Working Configuration (Feb 2, 2026)
+## Current Working Configuration (Feb 3, 2026) ✅
 
-### ⚠️ IMPORTANT: R2 Upload Broken - Using Local Fallback
-**Status:** Images currently saved to local `/tmp` (lost on deployment)  
-**Last Working R2 Upload:** January 31, 2026  
-**Issue:** SSL handshake failure between Vercel and Cloudflare R2
+### ✅ Backblaze B2 Storage - FULLY WORKING
+**Status:** Receipt images uploading successfully to B2  
+**Implementation:** February 3, 2026 at ~06:30 UTC  
+**Migration From:** Cloudflare R2 (broken since Feb 1)  
+**Storage:** Backblaze B2 (10GB free tier)
+
+### Why We Switched to B2
+- ❌ **Cloudflare R2:** SSL handshake failure with Vercel (unfixable from our side)
+- ✅ **Backblaze B2:** AWS S3-compatible API, no SSL issues, generous free tier
 
 ### Working Configuration Backup
-**File:** `R2_WORKING_BACKUP_20260202.md` - Complete backup of working state  
-**Git Commit:** `208cd23c` - Last working state  
-**n8n Workflow:** Export saved in `n8n/` folder
+**File:** `B2_WORKING_BACKUP_20260203.md` - Complete B2 working state  
+**Git Commit:** `50616d51` - B2 implementation working  
+**Previous R2 Backup:** `R2_WORKING_BACKUP_20260202.md` - For historical reference
 
 ### Current Environment Variables (receipt-parcer)
-```
-R2_ENDPOINT=https://e21ca487c714259a0c1d0ff82c8e8ff6f.r2.cloudflarestorage.com
+
+```env
+# Backblaze B2 (PRIMARY - Working)
+B2_KEY_ID=005a1119bde3d4e0000000001
+B2_APPLICATION_KEY=K005yuYkg7Tn9EYV2eAKAe0cEF3j7p0
+B2_BUCKET_NAME=receiptai-images
+B2_ENDPOINT=https://s3.us-east-005.backblazeb2.com
+B2_PUBLIC_URL=https://s3.us-east-005.backblazeb2.com/receiptai-images
+B2_REGION=us-east-005
+
+# Cloudflare R2 (LEGACY - Keep for old receipts)
 R2_PUBLIC_URL=https://pub-18f1f7c4601c489e84019b50d64917cd.r2.dev/receiptai-images
 R2_BUCKET_NAME=receiptai-images
+R2_ENDPOINT=https://e21ca487c714259a0c1d0ff82c8e8ff6f.r2.cloudflarestorage.com
+R2_ACCESS_KEY_ID=01a434e4cb02672e8a7d3dd39735bc79
+R2_SECRET_ACCESS_KEY=[HIDDEN]
 ```
 
-### To Restore Working State
-1. See `R2_WORKING_BACKUP_20260202.md` for complete restoration steps
-2. Or run: `git checkout 208cd23c` to revert to working state
+### n8n Working Configuration
+
+**"HTTP Request to Vercel" Node:**
+- Method: POST
+- URL: `https://receipt-parcer.vercel.app/api/upload-receipt?userId={{ $json.user_id }}&filename={{ $json.dynamic_filename }}`
+- Body: n8n Binary File (field: data)
+
+**"Combine OCR and R2 Data" Node (Working B2 Code):**
+```javascript
+const B2_PUBLIC_URL = 'https://s3.us-east-005.backblazeb2.com/receiptai-images';
+const fileKey = `receipts/${userId}/${filename}`;
+const b2Url = `${B2_PUBLIC_URL}/${fileKey}`;
+// storage_provider: 'backblaze-b2'
+```
+
+### Public URL Format (Working)
+**New Receipts (B2):**
+```
+https://s3.us-east-005.backblazeb2.com/receiptai-images/receipts/{userId}/{filename}.jpg
+```
+
+**Old Receipts (R2 - Read Only):**
+```
+https://pub-18f1f7c4601c489e84019b50d64917cd.r2.dev/receiptai-images/receipts/{userId}/{filename}.jpg
+```
+
+### To Restore Working B2 State
+1. See `B2_WORKING_BACKUP_20260203.md` for complete restoration steps
+2. Verify B2 environment variables are set correctly
+3. Update n8n "Combine OCR and R2 Data" node with B2_PUBLIC_URL
+4. Or run: `git checkout 50616d51` to revert to B2 working state
+
+### Migration Summary
+- ✅ New uploads go to Backblaze B2
+- ✅ Old receipts (pre-Feb 3) remain in R2 (accessible)
+- ✅ No data migration needed
+- ✅ Both storage systems coexist
+- ✅ 10GB free storage on B2
 
 ## Troubleshooting
 
