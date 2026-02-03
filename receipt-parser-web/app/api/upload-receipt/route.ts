@@ -1,67 +1,64 @@
-// Build: 2026-02-02 - Working version from Jan 31 with native https
+// Build: 2026-02-02 - Backblaze B2 Upload Implementation
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
-import https from 'https';
-import crypto from 'crypto';
-import { format } from 'date-fns';
 
-const R2_ENDPOINT = process.env.R2_ENDPOINT;
+const B2_ENDPOINT = process.env.B2_ENDPOINT;
+const B2_PUBLIC_URL = process.env.B2_PUBLIC_URL;
+const B2_KEY_ID = process.env.B2_KEY_ID;
+const B2_APPLICATION_KEY = process.env.B2_APPLICATION_KEY;
+const B2_BUCKET = process.env.B2_BUCKET_NAME || 'receiptai-images';
+const B2_REGION = process.env.B2_REGION || 'us-west-004';
+
+// Keep R2 config for reading old receipts (backward compatibility)
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
-const R2_BUCKET = process.env.R2_BUCKET_NAME || 'receiptai-images';
 
-if (!R2_ENDPOINT || !R2_PUBLIC_URL || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
-  throw new Error('R2 environment variables must be set');
+if (!B2_ENDPOINT || !B2_PUBLIC_URL || !B2_KEY_ID || !B2_APPLICATION_KEY) {
+  console.error('B2 environment variables:', {
+    hasEndpoint: !!B2_ENDPOINT,
+    hasPublicUrl: !!B2_PUBLIC_URL,
+    hasKeyId: !!B2_KEY_ID,
+    hasAppKey: !!B2_APPLICATION_KEY,
+    bucket: B2_BUCKET
+  });
+  throw new Error('B2 environment variables must be set');
 }
 
-// Helper function to make HTTPS request with TLS 1.2
-const makeHttpsRequest = (options: https.RequestOptions, body?: Buffer): Promise<{ statusCode?: number; statusMessage?: string; headers: any; data: string }> => {
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-      res.on('end', () => {
-        resolve({
-          statusCode: res.statusCode,
-          statusMessage: res.statusMessage,
-          headers: res.headers,
-          data
-        });
-      });
-    });
-    
-    req.on('error', reject);
-    req.setTimeout(30000, () => {
-      req.destroy(new Error('Request timeout'));
-    });
-    
-    if (body) {
-      req.write(body);
-    }
-    req.end();
-  });
-};
+// Create S3 client for Backblaze B2
+const b2Client = new S3Client({
+  region: B2_REGION,
+  endpoint: B2_ENDPOINT,
+  credentials: {
+    accessKeyId: B2_KEY_ID,
+    secretAccessKey: B2_APPLICATION_KEY,
+  },
+  forcePathStyle: true, // Required for B2
+});
 
 import { validateUserId, validateFilename, createValidationErrorResponse, sanitizeFilename } from '@/lib/validation';
 import { protectRoute } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('B2 Upload: Starting upload process');
+    
     // Validate authentication
     const authResult = await protectRoute(request, 'user');
     if (!authResult.isAuthenticated && authResult.response) {
+      console.log('B2 Upload: Authentication failed');
       return authResult.response;
     }
+    
+    console.log('B2 Upload: User authenticated', authResult.user?.userId);
     
     // Validate query parameters
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const filename = searchParams.get('filename');
+    
+    console.log('B2 Upload: Query params', { userId, filename });
     
     const errors: string[] = [];
     
@@ -78,11 +75,14 @@ export async function POST(request: NextRequest) {
     }
     
     if (errors.length > 0) {
+      console.log('B2 Upload: Validation errors', errors);
       return createValidationErrorResponse(errors);
     }
     
     const validatedUserId = userIdValidation.sanitizedData?.userId as string;
     const validatedFilename = filenameValidation.sanitizedData?.filename as string;
+    
+    console.log('B2 Upload: Validated params', { validatedUserId, validatedFilename });
     
     // Additional security: ensure user can only upload to their own directory
     if (authResult.user && authResult.user.userId !== validatedUserId && 
@@ -106,6 +106,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    console.log('B2 Upload: Received body', arrayBuffer.byteLength, 'bytes');
+    
     // Compress image with Sharp
     const compressedBuffer = await sharp(Buffer.from(arrayBuffer))
       .resize(1024, 1365, {
@@ -126,83 +128,38 @@ export async function POST(request: NextRequest) {
       })
       .toBuffer();
     
-    console.log('Original size:', arrayBuffer.byteLength, 'Compressed:', compressedBuffer.length);
+    console.log('B2 Upload: Compressed image', {
+      original: arrayBuffer.byteLength,
+      compressed: compressedBuffer.length,
+      savings: Math.round((1 - compressedBuffer.length / arrayBuffer.byteLength) * 100) + '%'
+    });
     
-    // Build R2 object key and upload URL
+    // Build B2 object key
     const fileKey = `receipts/${validatedUserId}/${finalFilename}`;
-    const uploadUrl = `${R2_ENDPOINT}/${R2_BUCKET}/${fileKey}`;
     
-    // Generate AWS SigV4 signature manually
-    const now = new Date();
-    const amzDate = format(now, 'yyyyMMdd\'T\'HHmmss\'Z\'');
-    const dateStamp = format(now, 'yyyyMMdd');
+    console.log('B2 Upload: Uploading to B2', {
+      bucket: B2_BUCKET,
+      endpoint: B2_ENDPOINT,
+      fileKey: fileKey
+    });
     
-    // Create canonical request
-    const canonicalRequest = [
-      'PUT',
-      `/${R2_BUCKET}/${fileKey}`,
-      '',
-      `host:${new URL(R2_ENDPOINT!).hostname}`,
-      `x-amz-acl:public-read`,
-      `x-amz-content-sha256:${crypto.createHash('sha256').update(compressedBuffer).digest('hex')}`,
-      `x-amz-date:${amzDate}`,
-      '',
-      'host;x-amz-acl;x-amz-content-sha256;x-amz-date',
-      crypto.createHash('sha256').update(compressedBuffer).digest('hex')
-    ].join('\n');
+    // Upload to B2 using AWS SDK
+    const command = new PutObjectCommand({
+      Bucket: B2_BUCKET,
+      Key: fileKey,
+      Body: compressedBuffer,
+      ContentType: 'image/jpeg',
+      ACL: 'public-read',
+    });
     
-    // Create string to sign
-    const algorithm = 'AWS4-HMAC-SHA256';
-    const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
-    const stringToSign = [
-      algorithm,
-      amzDate,
-      credentialScope,
-      crypto.createHash('sha256').update(canonicalRequest).digest('hex')
-    ].join('\n');
+    await b2Client.send(command);
     
-    // Calculate signature
-    const hmac = (key: Buffer, msg: string) => crypto.createHmac('sha256', key).update(msg).digest();
-    const getSignatureKey = (key: string, dateStamp: string, regionName: string, serviceName: string) => {
-      const kDate = hmac(Buffer.from('AWS4' + key), dateStamp);
-      const kRegion = hmac(kDate, regionName);
-      const kService = hmac(kRegion, serviceName);
-      return hmac(kService, 'aws4_request');
-    };
+    console.log('B2 Upload: Successfully uploaded to B2');
     
-    const signingKey = getSignatureKey(R2_SECRET_ACCESS_KEY!, dateStamp, 'auto', 's3');
-    const signature = hmac(signingKey, stringToSign).toString('hex');
+    // Build public URL
+    const publicUrl = `${B2_PUBLIC_URL}/${fileKey}`;
     
-    // Upload to R2 using native https module with TLS 1.2
-    const url = new URL(uploadUrl);
-    const headers = {
-      'Content-Type': 'image/jpeg',
-      'x-amz-acl': 'public-read',
-      'x-amz-content-sha256': crypto.createHash('sha256').update(compressedBuffer).digest('hex'),
-      'x-amz-date': amzDate,
-      'Authorization': `${algorithm} Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=host;x-amz-acl;x-amz-content-sha256;x-amz-date, Signature=${signature}`,
-      'Content-Length': compressedBuffer.length.toString()
-    };
-    
-    const options: https.RequestOptions = {
-      hostname: url.hostname,
-      port: url.port || 443,
-      path: url.pathname + url.search,
-      method: 'PUT',
-      headers,
-      // Force TLS 1.2 for Cloudflare R2 compatibility
-      secureProtocol: 'TLSv1_2_method',
-      rejectUnauthorized: true,
-      timeout: 30000
-    };
-    
-    const response = await makeHttpsRequest(options, compressedBuffer);
-    
-    if (response.statusCode !== 200) {
-      throw new Error(`R2 upload failed: ${response.statusCode} ${response.statusMessage} - ${response.data}`);
-    }
-    
-    const publicUrl = `${R2_PUBLIC_URL}/${fileKey}`;
+    console.log('B2 Upload: Public URL', publicUrl);
     
     return NextResponse.json({ 
       success: true,
@@ -210,19 +167,35 @@ export async function POST(request: NextRequest) {
       fileKey: fileKey,
       originalSize: arrayBuffer.byteLength,
       compressedSize: compressedBuffer.length,
-      savings: Math.round((1 - compressedBuffer.length / arrayBuffer.byteLength) * 100) + '%'
+      savings: Math.round((1 - compressedBuffer.length / arrayBuffer.byteLength) * 100) + '%',
+      storage: 'backblaze-b2',
+      bucket: B2_BUCKET
     });
     
   } catch (error: unknown) {
-    console.error('Upload error:', error);
+    console.error('B2 Upload error:', error);
     
     let errorMessage = 'Unknown error';
+    let errorDetails = '';
+    
     if (error instanceof Error) {
       errorMessage = error.message;
+      errorDetails = error.stack || '';
     }
     
+    // Log full error for debugging
+    console.error('B2 Upload full error:', {
+      message: errorMessage,
+      details: errorDetails,
+      error: error
+    });
+    
     return NextResponse.json(
-      { error: 'Upload failed', details: errorMessage },
+      { 
+        error: 'Upload failed', 
+        details: errorMessage,
+        storage: 'backblaze-b2'
+      },
       { status: 500 }
     );
   }
