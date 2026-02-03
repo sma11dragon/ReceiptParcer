@@ -152,6 +152,29 @@ NODE_ENV=development
 - **TypeScript**: `receipt-parser-web/tsconfig.json` (strict mode, `@/*` paths)
 - **Jest**: Configured in `package.json` with ts-jest preset
 
+## Current Working Configuration (Feb 2, 2026)
+
+### ⚠️ IMPORTANT: R2 Upload Broken - Using Local Fallback
+**Status:** Images currently saved to local `/tmp` (lost on deployment)  
+**Last Working R2 Upload:** January 31, 2026  
+**Issue:** SSL handshake failure between Vercel and Cloudflare R2
+
+### Working Configuration Backup
+**File:** `R2_WORKING_BACKUP_20260202.md` - Complete backup of working state  
+**Git Commit:** `208cd23c` - Last working state  
+**n8n Workflow:** Export saved in `n8n/` folder
+
+### Current Environment Variables (receipt-parcer)
+```
+R2_ENDPOINT=https://e21ca487c714259a0c1d0ff82c8e8ff6f.r2.cloudflarestorage.com
+R2_PUBLIC_URL=https://pub-18f1f7c4601c489e84019b50d64917cd.r2.dev/receiptai-images
+R2_BUCKET_NAME=receiptai-images
+```
+
+### To Restore Working State
+1. See `R2_WORKING_BACKUP_20260202.md` for complete restoration steps
+2. Or run: `git checkout 208cd23c` to revert to working state
+
 ## Troubleshooting
 
 ### R2 Upload SSL Errors
@@ -165,3 +188,5 @@ If you see `SSL routines:ssl3_read_bytes:ssl/tls alert handshake failure`:
 2. **See full guide**: `R2_TROUBLESHOOTING.md`
 
 3. **Quick test**: Temporarily skip R2 upload in route.ts to isolate if it's n8n→Vercel or Vercel→R2 issue
+
+4. **Restoration**: Use backup configuration from `R2_WORKING_BACKUP_20260202.md`
