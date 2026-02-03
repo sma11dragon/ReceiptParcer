@@ -132,7 +132,7 @@ export function createValidationErrorResponse(errors: string[]): NextResponse {
 export function sanitizeFilename(filename: string): string {
     return filename
         .replace(/\.\.\//g, '')
-        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .replace(/[^a-zA-Z0-9._,-]/g, '_')
         .substring(0, 255);
 }
 
