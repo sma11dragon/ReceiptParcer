@@ -160,6 +160,14 @@ NODE_ENV=development
 **Migration From:** Cloudflare R2 (broken since Feb 1)  
 **Storage:** Backblaze B2 (10GB free tier)
 
+### ⚠️ Telegram Bot Onboarding Issue - PENDING FIX
+**Status:** New users cannot onboard via `/start` command  
+**Problem:** Registration creates `bot_token` but NOT `verification_token`  
+**Impact:** New users get "Invalid token" error  
+**Solution:** Auto-link fallback branch (planned for Feb 4, 2026)  
+**Risk:** LOW - Safe fallback approach with easy rollback  
+**Documentation:** See `SESSION_NOTES_20260203.md` for complete plan
+
 ### Why We Switched to B2
 - ❌ **Cloudflare R2:** SSL handshake failure with Vercel (unfixable from our side)
 - ✅ **Backblaze B2:** AWS S3-compatible API, no SSL issues, generous free tier
@@ -226,6 +234,64 @@ https://pub-18f1f7c4601c489e84019b50d64917cd.r2.dev/receiptai-images/receipts/{u
 - ✅ No data migration needed
 - ✅ Both storage systems coexist
 - ✅ 10GB free storage on B2
+
+## Backup Procedures
+
+### Before Making Changes to n8n Workflows
+
+Always create backups before modifying critical workflows:
+
+**Step 1: Export from n8n Editor**
+1. Go to **n8n Editor** → **Workflows**
+2. For each workflow being modified:
+   - Click **"..."** → **"Download"**
+   - Save with format: `WORKFLOW_NAME_BACKUP_YYYYMMDD_HHMM.json`
+
+**Step 2: Copy to Project Directory**
+```bash
+cd /Users/siewloongchan/Documents/AI Projects/Receipts Parsing
+cp "n8n/Original Workflow.json" "n8n/BACKUP_Original_Workflow_YYYYMMDD_HHMM.json"
+```
+
+**Step 3: Commit to Git**
+```bash
+git add n8n/*BACKUP*.json
+git commit -m "BACKUP: Pre-change workflow versions for [DESCRIPTION]"
+git push
+```
+
+**Step 4: Create Git Tag (Optional but Recommended)**
+```bash
+git tag -a PRE_[CHANGE_NAME]_BACKUP -m "Backup before implementing [CHANGE_NAME]"
+git push origin PRE_[CHANGE_NAME]_BACKUP
+```
+
+### Restoring from Backup
+
+**Option 1: n8n Version History (Fastest)**
+1. Go to **n8n Editor** → **Workflows** → Select workflow
+2. Click **"Version History"** (top right)
+3. Find version before changes (by timestamp)
+4. Click **"Restore"**
+
+**Option 2: Import JSON File**
+1. Go to **n8n Editor** → **Workflows** → **"Import from File"**
+2. Select backup JSON file
+3. Note: Creates NEW workflow - update webhook URL if needed
+
+**Option 3: Git Revert**
+```bash
+git checkout [COMMIT_HASH] -- n8n/workflow-file.json
+# Re-import into n8n
+```
+
+### Current Backups
+
+**Pre-Auto-Link Backup (Feb 4, 2026)**
+- Files: `V5_WRAPPER_BACKUP_20260204_0000.json`, `V5_DASHBOARD_BACKUP_20260204_0000.json`
+- Commit: Will be created with this backup
+- Purpose: Before implementing Telegram auto-link feature
+- See: `SESSION_NOTES_20260203.md` for implementation plan
 
 ## Troubleshooting
 
