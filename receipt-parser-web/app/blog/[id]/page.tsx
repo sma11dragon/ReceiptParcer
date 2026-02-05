@@ -5,6 +5,21 @@ import Link from 'next/link';
 import { ArrowLeft, Clock, User, Tag } from 'lucide-react';
 import { useParams } from 'next/navigation';
 
+interface BlogTranslations {
+    title: string;
+    subtitle: string;
+    read_more: string;
+    post1_title: string;
+    post1_desc: string;
+    post1_tag: string;
+    post2_title: string;
+    post2_desc: string;
+    post2_tag: string;
+    post3_title: string;
+    post3_desc: string;
+    post3_tag: string;
+}
+
 export default function BlogPost() {
     const { t } = useLanguage();
     const params = useParams();
@@ -17,10 +32,11 @@ export default function BlogPost() {
         const validIds = ['1', '2', '3'];
         if (!validIds.includes(postId)) return null;
 
+        const blogTranslations = t.blog as unknown as BlogTranslations;
         return {
-            title: (t.blog as any)[`post${postId}_title`],
-            desc: (t.blog as any)[`post${postId}_desc`],
-            tag: (t.blog as any)[`post${postId}_tag`],
+            title: blogTranslations[`post${postId}_title` as keyof BlogTranslations],
+            desc: blogTranslations[`post${postId}_desc` as keyof BlogTranslations],
+            tag: blogTranslations[`post${postId}_tag` as keyof BlogTranslations],
             content: getContent(postId),
             author: getAuthor(postId),
             date: 'Jan 6, 2026'

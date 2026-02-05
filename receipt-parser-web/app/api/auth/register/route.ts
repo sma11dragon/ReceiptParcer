@@ -113,9 +113,9 @@ export async function POST(request: Request) {
                     'INSERT INTO user_telegram_bots (user_id, bot_token, bot_username) VALUES ($1, $2, $3)',
                     [userId, botToken, cleanBotUsername]
                 );
-            } catch (error: any) {
+            } catch (error) {
                 // Ignore duplicate key errors - bot might already be registered
-                if (error.code !== '23505') {
+                if (error instanceof Error && 'code' in error && (error as { code: string }).code !== '23505') {
                     console.warn('Failed to insert into user_telegram_bots:', error);
                 }
             }
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
             { status: 201 }
         );
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Registration Error:', error);
         return NextResponse.json(
             { message: 'Internal Server Error' },

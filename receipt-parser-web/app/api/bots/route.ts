@@ -111,9 +111,9 @@ export async function POST(request: NextRequest) {
                 error: webhookResult.error
             }
         });
-    } catch (error: any) {
+    } catch (error) {
         console.error('Add Bot Error:', error);
-        if (error.code === '23505') { // Unique violation
+        if (error instanceof Error && 'code' in error && (error as { code: string }).code === '23505') { // Unique violation
             return NextResponse.json({ error: 'This bot token is already registered' }, { status: 400 });
         }
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

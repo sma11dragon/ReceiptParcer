@@ -16,18 +16,20 @@ export default function ResetPassword() {
     const [otp, setOtp] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [email, setEmail] = useState('');
+    const [email, setEmail] = useState(() => {
+        // Initialize from sessionStorage
+        if (typeof window !== 'undefined') {
+            return sessionStorage.getItem('resetEmail') || '';
+        }
+        return '';
+    });
 
     useEffect(() => {
-        // Get email from sessionStorage
-        const storedEmail = sessionStorage.getItem('resetEmail');
-        if (storedEmail) {
-            setEmail(storedEmail);
-        } else {
-            // Redirect back to forgot password if no email
+        // Redirect back to forgot password if no email
+        if (!email) {
             router.push('/forgot-password');
         }
-    }, [router]);
+    }, [email, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

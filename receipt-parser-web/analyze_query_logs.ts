@@ -1,6 +1,10 @@
-const { Pool } = require('pg');
-const fs = require('fs');
-const path = require('path');
+import { Pool } from 'pg';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function getDatabaseUrl() {
     const envPath = path.join(__dirname, '.env.local');
@@ -12,7 +16,12 @@ async function getDatabaseUrl() {
     return process.env.DATABASE_URL;
 }
 
-async function runAnalysis(options = {}) {
+interface AnalysisOptions {
+    silent?: boolean;
+    timeInterval?: string;
+}
+
+async function runAnalysis(options: AnalysisOptions = {}) {
     const { silent = false, timeInterval = '24 hours' } = options;
     const databaseUrl = await getDatabaseUrl();
     if (!databaseUrl) {
@@ -98,11 +107,11 @@ async function runAnalysis(options = {}) {
         `);
 
         // Levenshtein distance function
-        function levenshtein(a, b) {
+        function levenshtein(a: string, b: string): number {
             if (a.length === 0) return b.length;
             if (b.length === 0) return a.length;
             
-            const matrix = [];
+            const matrix: number[][] = [];
             for (let i = 0; i <= b.length; i++) {
                 matrix[i] = [i];
             }
@@ -122,7 +131,14 @@ async function runAnalysis(options = {}) {
             return matrix[b.length][a.length];
         }
 
-        const potentialMisspellings = [];
+        interface Misspelling {
+            original: string;
+            suggested: string;
+            distance: number;
+            full_query: string;
+        }
+
+        const potentialMisspellings: Misspelling[] = [];
         for (const row of messages.rows) {
             const text = row.text;
             if (!text) continue;
@@ -242,7 +258,7 @@ async function runAnalysis(options = {}) {
         }
         
         if (potentialMisspellings.length > 0) {
-            const uniqueCorrections = {};
+            const uniqueCorrections: Record<string, string> = {};
             potentialMisspellings.forEach(item => {
                 uniqueCorrections[item.original] = item.suggested;
             });
@@ -277,7 +293,7 @@ async function runAnalysis(options = {}) {
             if (potentialMisspellings.length > 0) {
                 console.log(`• ${potentialMisspellings.length} potential misspellings detected`);
                 console.log('  Add to correction dictionary:');
-                const uniqueCorrections = {};
+                const uniqueCorrections: Record<string, string> = {};
                 potentialMisspellings.forEach(item => {
                     uniqueCorrections[item.original] = item.suggested;
                 });
@@ -308,7 +324,7 @@ async function runAnalysis(options = {}) {
         };
 
     } catch (error) {
-        console.error('❌ Analysis failed:', error.message);
+        console.error('❌ Analysis failed:', (error as Error).message);
         console.error(error);
         process.exit(1);
     } finally {
@@ -317,8 +333,8 @@ async function runAnalysis(options = {}) {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     runAnalysis();
 }
 
-module.exports = { runAnalysis };
+export { runAnalysis };
