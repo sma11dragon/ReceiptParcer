@@ -36,9 +36,9 @@ export async function POST(request: Request) {
         const { username, email, password, location, botUsername, botToken } = await request.json();
 
         // Basic Validation
-        if (!username || !email || !password) {
+        if (!username || !email || !password || !botToken) {
             return NextResponse.json(
-                { message: 'Missing required fields' },
+                { message: 'Missing required fields. Telegram bot token is required.' },
                 { status: 400 }
             );
         }

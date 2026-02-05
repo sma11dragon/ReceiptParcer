@@ -29,6 +29,13 @@ export default function Register() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Validate required fields
+        if (!botToken) {
+            setError('Telegram bot token is required to use receipt parsing via Telegram');
+            return;
+        }
+        
         setIsLoading(true);
         setError('');
         setSuccess('');
@@ -205,7 +212,7 @@ export default function Register() {
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Bot size={20} className="text-accent" />
-                                <span style={{ fontWeight: '600', fontSize: '0.95rem' }}>{t.auth.bot_setup_title} <span style={{ color: 'var(--accent-primary)', fontSize: '0.85rem' }}>(Recommended)</span></span>
+                                <span style={{ fontWeight: '600', fontSize: '0.95rem' }}>{t.auth.bot_setup_title} <span style={{ color: '#ef4444', fontSize: '0.85rem' }}>(Required for Telegram)</span></span>
                             </div>
                             <button
                                 type="button"
@@ -243,7 +250,7 @@ export default function Register() {
                                     <li>{t.auth.bot_step5}</li>
                                 </ol>
                                 <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                    After creating your bot, paste the token above. You can also skip and add a bot later from your dashboard.
+                                    After creating your bot, paste the token above. Telegram bot is required to use receipt parsing via Telegram.
                                 </div>
                             </div>
                         )}
