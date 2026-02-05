@@ -9,8 +9,8 @@ WORKDIR /app
 # Copy package files
 COPY receipt-parser-web/package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (including devDependencies for TypeScript build)
+RUN npm ci
 
 # Copy application source
 COPY receipt-parser-web/ ./
