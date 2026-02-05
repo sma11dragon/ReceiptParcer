@@ -18,7 +18,7 @@
     "test:report": "node tests/scripts/generate-report.js",
     "report:daily": "node send_daily_report.js",
     "report:weekly": "npx tsx send_weekly_report.ts",
-    "report:analyze": "npx tsx analyze_query_logs.ts"
+    "report:analyze": "npx tsx ../analyze_query_logs.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.980.0",

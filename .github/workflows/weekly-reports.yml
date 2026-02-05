@@ -37,9 +37,7 @@ jobs:
         run: npm install -g tsx
 
       - name: Send weekly report
-        run: |
-          cd receipt-parser-web
-          npx tsx send_weekly_report.ts
+        run: npx tsx receipt-parser-web/send_weekly_report.ts
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
