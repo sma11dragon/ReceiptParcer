@@ -17,7 +17,7 @@
     "test:bot": "jest --testPathPattern=bot",
     "test:report": "node tests/scripts/generate-report.js",
     "report:daily": "node send_daily_report.js",
-    "report:weekly": "node send_weekly_report.js",
+    "report:weekly": "npx tsx send_weekly_report.ts",
     "report:analyze": "npx tsx analyze_query_logs.ts"
   },
   "dependencies": {

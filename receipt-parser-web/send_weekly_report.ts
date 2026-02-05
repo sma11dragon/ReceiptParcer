@@ -1,7 +1,11 @@
-const { Resend } = require('resend');
-const { runAnalysis } = require('./analyze_query_logs.js');
-const path = require('path');
-const fs = require('fs');
+import { Resend } from 'resend';
+import { runAnalysis } from './analyze_query_logs.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function getEmailConfig() {
     const envPath = path.join(__dirname, '.env.local');
@@ -411,14 +415,14 @@ async function sendWeeklyReport() {
         return { success: true };
         
     } catch (error) {
-        console.error('❌ Failed to send weekly report:', error.message);
+        console.error('❌ Failed to send weekly report:', (error as Error).message);
         console.error(error);
-        return { success: false, error: error.message };
+        return { success: false, error: (error as Error).message };
     }
 }
 
 // Run if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     sendWeeklyReport().then(result => {
         if (result.success) {
             process.exit(0);
@@ -428,4 +432,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { sendWeeklyReport };
+export { sendWeeklyReport };

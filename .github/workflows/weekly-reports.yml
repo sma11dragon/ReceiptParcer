@@ -1,0 +1,55 @@
+name: Weekly Reports
+
+on:
+  schedule:
+    # Run every Friday at midnight UTC (00:00)
+    - cron: '0 0 * * 5'
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+  EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+
+jobs:
+  send-weekly-report:
+    name: Send Weekly Query Logs Report
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd receipt-parser-web
+          npm ci
+
+      - name: Install tsx for TypeScript execution
+        run: npm install -g tsx
+
+      - name: Send weekly report
+        run: |
+          cd receipt-parser-web
+          npx tsx send_weekly_report.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+
+      - name: Report status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Weekly report sent successfully!"
+          else
+            echo "❌ Failed to send weekly report"
+          fi
