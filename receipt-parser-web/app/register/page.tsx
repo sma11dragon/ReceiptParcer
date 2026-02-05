@@ -202,10 +202,51 @@ export default function Register() {
                         marginBottom: '1.5rem',
                         marginTop: '0.5rem'
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                            <Bot size={20} className="text-accent" />
-                            <span style={{ fontWeight: '600', fontSize: '0.95rem' }}>{t.auth.bot_setup_title} (Optional)</span>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Bot size={20} className="text-accent" />
+                                <span style={{ fontWeight: '600', fontSize: '0.95rem' }}>{t.auth.bot_setup_title} <span style={{ color: 'var(--accent-primary)', fontSize: '0.85rem' }}>(Recommended)</span></span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowBotHelp(!showBotHelp)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--accent-primary)',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem'
+                                }}
+                            >
+                                {showBotHelp ? 'Hide instructions' : 'How to create a bot?'}
+                            </button>
                         </div>
+
+                        {showBotHelp && (
+                            <div style={{
+                                background: 'rgba(167, 139, 250, 0.1)',
+                                border: '1px solid rgba(167, 139, 250, 0.2)',
+                                borderRadius: '12px',
+                                padding: '1rem',
+                                marginBottom: '1rem',
+                                fontSize: '0.85rem'
+                            }}>
+                                <div style={{ fontWeight: '600', marginBottom: '0.5rem', color: 'var(--accent-primary)' }}>{t.auth.how_to_create_bot}</div>
+                                <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <li>{t.auth.bot_step1}</li>
+                                    <li>{t.auth.bot_step2}</li>
+                                    <li>{t.auth.bot_step3}</li>
+                                    <li>{t.auth.bot_step4}</li>
+                                    <li>{t.auth.bot_step5}</li>
+                                </ol>
+                                <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                    After creating your bot, paste the token above. You can also skip and add a bot later from your dashboard.
+                                </div>
+                            </div>
+                        )}
 
                         <div className="form-group">
                             <input

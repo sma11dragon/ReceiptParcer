@@ -46,6 +46,7 @@ export default function DashboardPage() {
     const [editForm, setEditForm] = useState<any>({});
     const [isUpdating, setIsUpdating] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showBotHelpDashboard, setShowBotHelpDashboard] = useState(false);
 
     // Filters State
     const [filters, setFilters] = useState({
@@ -150,8 +151,10 @@ export default function DashboardPage() {
 
             if (data.success) {
                 setBots([data.bot, ...bots]);
+                // Store token for success message before clearing
+                const addedToken = newToken;
                 setNewToken('');
-                setSuccess(t.dashboard.bots.added);
+                setSuccess(t.dashboard.bots.added + ' Go to your bot in Telegram and send "/start ' + addedToken + '" to link your account.');
             } else {
                 setError(data.error || t.dashboard.bots.error_adding);
             }
@@ -506,28 +509,76 @@ export default function DashboardPage() {
                     <div className="grid-top" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem' }}>
                         {/* Your Bots */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            <h2 style={{ fontSize: '1.4rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <Bot className="text-accent" />
-                                {t.dashboard.bots.title}
-                            </h2>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h2 style={{ fontSize: '1.4rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <Bot className="text-accent" />
+                                    {t.dashboard.bots.title}
+                                </h2>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBotHelpDashboard(!showBotHelpDashboard)}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--accent-primary)',
+                                        fontSize: '0.85rem',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.25rem'
+                                    }}
+                                >
+                                    {showBotHelpDashboard ? 'Hide help' : 'Need help?'}
+                                </button>
+                            </div>
                             <div className="card" style={{ padding: '1.5rem', borderRadius: '24px', height: '320px', display: 'flex', flexDirection: 'column' }}>
-                                <form onSubmit={handleAddBot} style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                                {showBotHelpDashboard && (
+                                    <div style={{
+                                        background: 'rgba(167, 139, 250, 0.1)',
+                                        border: '1px solid rgba(167, 139, 250, 0.2)',
+                                        borderRadius: '12px',
+                                        padding: '1rem',
+                                        marginBottom: '1.5rem',
+                                        fontSize: '0.85rem'
+                                    }}>
+                                        <div style={{ fontWeight: '600', marginBottom: '0.5rem', color: 'var(--accent-primary)' }}>How to connect your Telegram bot:</div>
+                                        <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                            <li>Open Telegram and search for @BotFather</li>
+                                            <li>Send /newbot command and follow instructions</li>
+                                            <li>Copy the token BotFather gives you</li>
+                                            <li>Paste the token in the field below and click +</li>
+                                            <li>After adding, go to your bot in Telegram and send <code>/start TOKEN</code> (replace TOKEN with your bot token) to link your account</li>
+                                        </ol>
+                                    </div>
+                                )}
+                                <form onSubmit={handleAddBot} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
                                     <input type="text" className="input" placeholder={t.dashboard.bots.token_placeholder} value={newToken} onChange={(e) => setNewToken(e.target.value)} style={{ flex: 1 }} />
                                     <button type="submit" className="btn btn-primary" disabled={isBotLoading} style={{ height: '48px', width: '48px', padding: 0 }}><Plus size={20} /></button>
                                 </form>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem', paddingLeft: '0.25rem' }}>
+                                    Paste your Telegram bot token here. Need help creating a bot? Click "Need help?" above.
+                                </div>
                                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                    {bots.map((bot) => (
-                                        <div key={bot.id} className="animate-fade-in" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                <Bot size={18} className="text-accent" />
-                                                <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{bot.bot_username}</div>
+                                    {bots.length > 0 ? (
+                                        bots.map((bot) => (
+                                            <div key={bot.id} className="animate-fade-in" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                    <Bot size={18} className="text-accent" />
+                                                    <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{bot.bot_username}</div>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                    <a href={`https://t.me/${bot.bot_username?.replace('@', '')}`} target="_blank" className="btn btn-ghost" style={{ padding: '0.4rem' }}><MessageSquare size={16} /></a>
+                                                    <button onClick={() => handleDeleteBot(bot.id)} className="btn btn-ghost" style={{ padding: '0.4rem', color: '#ef4444' }}><Trash2 size={16} /></button>
+                                                </div>
                                             </div>
-                                            <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                                <a href={`https://t.me/${bot.bot_username?.replace('@', '')}`} target="_blank" className="btn btn-ghost" style={{ padding: '0.4rem' }}><MessageSquare size={16} /></a>
-                                                <button onClick={() => handleDeleteBot(bot.id)} className="btn btn-ghost" style={{ padding: '0.4rem', color: '#ef4444' }}><Trash2 size={16} /></button>
-                                            </div>
+                                        ))
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)', textAlign: 'center', gap: '0.75rem' }}>
+                                            <Bot size={48} style={{ opacity: 0.5 }} />
+                                            <div style={{ fontSize: '0.95rem' }}>No bots connected yet</div>
+                                            <div style={{ fontSize: '0.85rem', maxWidth: '280px' }}>Add your Telegram bot token above to start parsing receipts via Telegram.</div>
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             </div>
                         </div>
