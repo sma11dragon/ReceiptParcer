@@ -5,37 +5,53 @@ import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
 
-const B2_ENDPOINT = process.env.B2_ENDPOINT;
-const B2_PUBLIC_URL = process.env.B2_PUBLIC_URL;
-const B2_KEY_ID = process.env.B2_KEY_ID;
-const B2_APPLICATION_KEY = process.env.B2_APPLICATION_KEY;
-const B2_BUCKET = process.env.B2_BUCKET_NAME || 'receiptai-images';
-const B2_REGION = process.env.B2_REGION || 'us-west-004';
+// Lazy initialization of B2 client - only created when needed at runtime
+let b2Client: S3Client | null = null;
+
+function getB2Client(): S3Client {
+  if (b2Client) return b2Client;
+  
+  const B2_ENDPOINT = process.env.B2_ENDPOINT;
+  const B2_KEY_ID = process.env.B2_KEY_ID;
+  const B2_APPLICATION_KEY = process.env.B2_APPLICATION_KEY;
+  const B2_REGION = process.env.B2_REGION || 'us-west-004';
+  
+  if (!B2_ENDPOINT || !B2_KEY_ID || !B2_APPLICATION_KEY) {
+    console.error('B2 environment variables missing:', {
+      hasEndpoint: !!B2_ENDPOINT,
+      hasKeyId: !!B2_KEY_ID,
+      hasAppKey: !!B2_APPLICATION_KEY,
+    });
+    throw new Error('B2 environment variables must be set');
+  }
+  
+  b2Client = new S3Client({
+    region: B2_REGION,
+    endpoint: B2_ENDPOINT,
+    credentials: {
+      accessKeyId: B2_KEY_ID,
+      secretAccessKey: B2_APPLICATION_KEY,
+    },
+    forcePathStyle: true, // Required for B2
+  });
+  
+  return b2Client;
+}
+
+// Get B2 config at runtime
+function getB2Config() {
+  const B2_PUBLIC_URL = process.env.B2_PUBLIC_URL;
+  const B2_BUCKET = process.env.B2_BUCKET_NAME || 'receiptai-images';
+  
+  if (!B2_PUBLIC_URL) {
+    throw new Error('B2_PUBLIC_URL environment variable must be set');
+  }
+  
+  return { B2_PUBLIC_URL, B2_BUCKET };
+}
 
 // Keep R2 config for reading old receipts (backward compatibility)
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
-
-if (!B2_ENDPOINT || !B2_PUBLIC_URL || !B2_KEY_ID || !B2_APPLICATION_KEY) {
-  console.error('B2 environment variables:', {
-    hasEndpoint: !!B2_ENDPOINT,
-    hasPublicUrl: !!B2_PUBLIC_URL,
-    hasKeyId: !!B2_KEY_ID,
-    hasAppKey: !!B2_APPLICATION_KEY,
-    bucket: B2_BUCKET
-  });
-  throw new Error('B2 environment variables must be set');
-}
-
-// Create S3 client for Backblaze B2
-const b2Client = new S3Client({
-  region: B2_REGION,
-  endpoint: B2_ENDPOINT,
-  credentials: {
-    accessKeyId: B2_KEY_ID,
-    secretAccessKey: B2_APPLICATION_KEY,
-  },
-  forcePathStyle: true, // Required for B2
-});
 
 import { validateUserId, validateFilename, createValidationErrorResponse, sanitizeFilename } from '@/lib/validation';
 import { protectRoute } from '@/lib/auth';
@@ -137,27 +153,30 @@ export async function POST(request: NextRequest) {
     // Build B2 object key
     const fileKey = `receipts/${validatedUserId}/${finalFilename}`;
     
+    // Get B2 config and client at runtime
+    const b2Config = getB2Config();
+    const client = getB2Client();
+    
     console.log('B2 Upload: Uploading to B2', {
-      bucket: B2_BUCKET,
-      endpoint: B2_ENDPOINT,
+      bucket: b2Config.B2_BUCKET,
       fileKey: fileKey
     });
     
     // Upload to B2 using AWS SDK
     const command = new PutObjectCommand({
-      Bucket: B2_BUCKET,
+      Bucket: b2Config.B2_BUCKET,
       Key: fileKey,
       Body: compressedBuffer,
       ContentType: 'image/jpeg',
       ACL: 'public-read',
     });
     
-    await b2Client.send(command);
+    await client.send(command);
     
     console.log('B2 Upload: Successfully uploaded to B2');
     
     // Build public URL
-    const publicUrl = `${B2_PUBLIC_URL}/${fileKey}`;
+    const publicUrl = `${b2Config.B2_PUBLIC_URL}/${fileKey}`;
     
     console.log('B2 Upload: Public URL', publicUrl);
     
@@ -169,7 +188,7 @@ export async function POST(request: NextRequest) {
       compressedSize: compressedBuffer.length,
       savings: Math.round((1 - compressedBuffer.length / arrayBuffer.byteLength) * 100) + '%',
       storage: 'backblaze-b2',
-      bucket: B2_BUCKET
+      bucket: b2Config.B2_BUCKET
     });
     
   } catch (error: unknown) {
