@@ -152,15 +152,8 @@ export async function GET(request: NextRequest) {
         // Execute query with timeout
         const result = await pool.query({
             text: query,
-            values: params,
-            rowMode: 'array'
+            values: params
         });
-
-        // Sanitize response data (remove any sensitive fields if needed)
-        const sanitizedRows = result.rows.map(row => ({
-            ...row,
-            // Add any field sanitization here if needed
-        }));
 
         return NextResponse.json({
             success: true,
