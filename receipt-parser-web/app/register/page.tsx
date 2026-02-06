@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ScanLine, ArrowLeft, Mail, Lock, User, MapPin, Bot, Key, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { ScanLine, ArrowLeft, Mail, Lock, User, MapPin, Bot, Key, ChevronDown, ChevronUp, Eye, EyeOff, Check, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useMobile } from '@/hooks/useMobile';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -23,9 +23,49 @@ export default function Register() {
     const [botToken, setBotToken] = useState('');
     const [showBotHelp, setShowBotHelp] = useState(false);
     const [showBotToken, setShowBotToken] = useState(false);
+    const [isFetchingBotInfo, setIsFetchingBotInfo] = useState(false);
+    const [botValidationStatus, setBotValidationStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
 
     // Mobile optimization detection
     const isMobile = useMobile();
+
+    // Auto-fetch bot info when token changes (debounced)
+    const fetchBotInfo = useCallback(async (token: string) => {
+        if (!token || token.length < 20) {
+            setBotValidationStatus('idle');
+            return;
+        }
+
+        setIsFetchingBotInfo(true);
+        setBotValidationStatus('idle');
+
+        try {
+            const response = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+            const data = await response.json();
+
+            if (data.ok && data.result) {
+                setBotUsername(data.result.username);
+                setBotValidationStatus('valid');
+            } else {
+                setBotValidationStatus('invalid');
+            }
+        } catch (err) {
+            setBotValidationStatus('invalid');
+        } finally {
+            setIsFetchingBotInfo(false);
+        }
+    }, []);
+
+    // Debounce token input to avoid excessive API calls
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (botToken) {
+                fetchBotInfo(botToken);
+            }
+        }, 800); // Wait 800ms after user stops typing
+
+        return () => clearTimeout(timer);
+    }, [botToken, fetchBotInfo]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -255,43 +295,74 @@ export default function Register() {
                             </div>
                         )}
 
-                        <div className="form-group">
-                            <input
-                                type="text"
-                                className="input"
-                                placeholder={t.auth.bot_username + " (@MyBot)"}
-                                value={botUsername}
-                                onChange={(e) => setBotUsername(e.target.value)}
-                                style={{ fontSize: '0.9rem' }}
-                            />
-                        </div>
-
-                        <div style={{ position: 'relative' }}>
+                        <div className="form-group" style={{ position: 'relative' }}>
                             <input
                                 type={showBotToken ? "text" : "password"}
                                 className="input"
                                 placeholder={t.auth.bot_token}
                                 value={botToken}
                                 onChange={(e) => setBotToken(e.target.value)}
-                                style={{ paddingRight: '3rem', fontSize: '0.9rem' }}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowBotToken(!showBotToken)}
-                                style={{
-                                    position: 'absolute',
-                                    right: '1rem',
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    background: 'none',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    color: 'var(--text-muted)'
+                                style={{ 
+                                    paddingRight: '3rem', 
+                                    fontSize: '0.9rem',
+                                    borderColor: botValidationStatus === 'valid' ? 'var(--success)' : botValidationStatus === 'invalid' ? 'var(--error)' : undefined
                                 }}
-                            >
-                                {showBotToken ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </button>
+                            />
+                            <div style={{
+                                position: 'absolute',
+                                right: '1rem',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}>
+                                {isFetchingBotInfo && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
+                                {botValidationStatus === 'valid' && <Check size={16} color="var(--success)" />}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBotToken(!showBotToken)}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        color: 'var(--text-muted)'
+                                    }}
+                                >
+                                    {showBotToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
                         </div>
+
+                        {botValidationStatus === 'valid' && botUsername && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.5rem 0.75rem',
+                                background: 'rgba(52, 211, 153, 0.1)',
+                                border: '1px solid rgba(52, 211, 153, 0.2)',
+                                borderRadius: '8px',
+                                fontSize: '0.85rem',
+                                color: 'var(--success)'
+                            }}>
+                                <Check size={14} />
+                                <span>Bot detected: @{botUsername}</span>
+                            </div>
+                        )}
+
+                        {botValidationStatus === 'invalid' && botToken && (
+                            <div style={{
+                                padding: '0.5rem 0.75rem',
+                                background: 'rgba(248, 113, 113, 0.1)',
+                                border: '1px solid rgba(248, 113, 113, 0.2)',
+                                borderRadius: '8px',
+                                fontSize: '0.85rem',
+                                color: 'var(--error)'
+                            }}>
+                                Invalid bot token. Please copy the full token from BotFather.
+                            </div>
+                        )}
                     </div>
 
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={isLoading}>
