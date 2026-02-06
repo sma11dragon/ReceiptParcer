@@ -95,12 +95,12 @@ export default function Register() {
                 return;
             }
 
-            setSuccess(t.auth.register_success);
+            // Save credentials for auto-fill on login page
+            localStorage.setItem('temp_reg_email', email);
+            localStorage.setItem('temp_reg_password', password);
 
-            // Redirect logic
-            setTimeout(() => {
-                router.push('/login');
-            }, 2000);
+            // Redirect to login with success parameter
+            router.push('/login?registered=true');
 
         } catch (err) {
             setError(t.auth.network_error);
@@ -288,6 +288,7 @@ export default function Register() {
                                     <li>{t.auth.bot_step3}</li>
                                     <li>{t.auth.bot_step4}</li>
                                     <li>{t.auth.bot_step5}</li>
+                                    <li>{t.auth.bot_step6}</li>
                                 </ol>
                                 <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                                     After creating your bot, paste the token above. Telegram bot is required to use receipt parsing via Telegram.

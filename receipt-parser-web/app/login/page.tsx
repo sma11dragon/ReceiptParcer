@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, Mail, Lock, ScanLine } from 'lucide-react';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, Mail, Lock, ScanLine, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { GoogleLogin } from '@react-oauth/google';
@@ -11,10 +11,32 @@ import { GoogleLogin } from '@react-oauth/google';
 export default function Login() {
     const { t } = useLanguage();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
+
+    // Check for registration success and auto-fill credentials
+    useEffect(() => {
+        const registered = searchParams.get('registered');
+        const savedEmail = localStorage.getItem('temp_reg_email');
+        const savedPassword = localStorage.getItem('temp_reg_password');
+
+        if (registered === 'true' && savedEmail) {
+            setShowRegistrationSuccess(true);
+            setEmail(savedEmail);
+            if (savedPassword) {
+                setPassword(savedPassword);
+            }
+            // Clear temp credentials after a delay
+            setTimeout(() => {
+                localStorage.removeItem('temp_reg_email');
+                localStorage.removeItem('temp_reg_password');
+            }, 5000);
+        }
+    }, [searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -98,6 +120,27 @@ export default function Login() {
                         {t.auth.signin_desc}
                     </p>
                 </div>
+
+                {showRegistrationSuccess && (
+                    <div className="animate-fade-in" style={{
+                        padding: '1rem',
+                        marginBottom: '1.5rem',
+                        color: 'var(--success)',
+                        background: 'rgba(52, 211, 153, 0.1)',
+                        border: '1px solid rgba(52, 211, 153, 0.2)',
+                        borderRadius: '12px',
+                        textAlign: 'center',
+                        fontSize: '0.9rem',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem'
+                    }}>
+                        <CheckCircle2 size={18} />
+                        Registration complete! Your credentials have been saved.
+                    </div>
+                )}
 
                 {error && (
                     <div className="animate-fade-in" style={{
