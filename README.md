@@ -270,22 +270,25 @@ npm run build
 ```
 
 ## Recent Changes
+- **Multi-Bot Support**: Fixed SQL query to support multiple Telegram bots per user (both bots now work independently)
+- **Registration Page Enhanced**: Added clear instructions for Display Name vs Username and multi-bot creation guide
+- **User Account Fix**: Merged UATboardingBot to primary account (user_id: 1) for proper multi-bot support
 - **Weekly Report System**: Implemented `send_weekly_report.js` with AI-generated error analysis for Friday midnight Singapore time delivery
 - **Enhanced Analysis**: Updated `analyze_query_logs.js` to support 7-day intervals and improved error categorization
 - **Cron Scheduling**: Added weekly cron job configuration for automated reporting
 - **Database Functions**: Created for multi-tenant user lookup
 - **Dashboard Workflow**: Updated to properly link Telegram IDs
-- **Wrapper Workflow V5**: Enhanced debugging and fixed onboarding for new users
+- **Wrapper Workflow V5**: Enhanced debugging and fixed multi-bot routing
 - **Webhook Configuration**: Configured with `?bot_token=` parameter for all bots
-- **RachelTBot Issue**: Webhook correctly set but token extraction fails (ongoing)
+- **Login Page Fix**: Fixed useSearchParams Suspense boundary issue
 - **Project Cleanup**: Reduced size from 1.1GB to 24MB (previous cleanup)
 - **AI Query Handling**: Identified issues with empty result notification
 
 ## Current Focus
-1. **Weekly Report System**: ✅ Implemented and ready for scheduling (Friday midnight Singapore time)
-2. **AI Query Handling**: Robust system for user queries with empty result notification and clarification prompts
-3. **Self-Learning Design**: Feedback loop with query logging and analysis for continuous improvement
-4. **Bot Token Extraction**: Debugging why `bot_token` isn't being extracted from webhook query parameters in wrapper workflow V5
+1. **Multi-Bot Support**: ✅ FULLY WORKING - Multiple Telegram bots per user now route correctly
+2. **Weekly Report System**: ✅ Implemented and ready for scheduling (Friday midnight Singapore time)
+3. **AI Query Handling**: Robust system for user queries with empty result notification and clarification prompts
+4. **Self-Learning Design**: Feedback loop with query logging and analysis for continuous improvement
 5. **Project Cleanup**: Identifying and documenting unused/redundant files for removal
 
 ## AI Query Handling Improvements
