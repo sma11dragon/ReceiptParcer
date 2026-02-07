@@ -281,7 +281,27 @@ export default function Register() {
                                 marginBottom: '1rem',
                                 fontSize: '0.85rem'
                             }}>
-                                <div style={{ fontWeight: '600', marginBottom: '0.5rem', color: 'var(--accent-primary)' }}>{t.auth.how_to_create_bot}</div>
+                                <div style={{ fontWeight: '600', marginBottom: '0.75rem', color: 'var(--accent-primary)' }}>{t.auth.how_to_create_bot}</div>
+                                
+                                {/* Naming Convention Explanation */}
+                                <div style={{ 
+                                    background: 'rgba(52, 211, 153, 0.1)', 
+                                    border: '1px solid rgba(52, 211, 153, 0.2)',
+                                    borderRadius: '8px',
+                                    padding: '0.75rem',
+                                    marginBottom: '1rem'
+                                }}>
+                                    <div style={{ fontWeight: '600', marginBottom: '0.5rem', color: 'var(--success)', fontSize: '0.8rem' }}>
+                                        📋 Understanding Bot Names
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                                        <strong>Display Name:</strong> What users see (e.g., "OnboardTest Jakarta")
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem' }}>
+                                        <strong>Username:</strong> The unique handle (e.g., @UATboardingBot)
+                                    </div>
+                                </div>
+
                                 <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     <li>{t.auth.bot_step1}</li>
                                     <li>{t.auth.bot_step2}</li>
@@ -290,6 +310,27 @@ export default function Register() {
                                     <li>{t.auth.bot_step5}</li>
                                     <li>{t.auth.bot_step6}</li>
                                 </ol>
+
+                                {/* Multiple Bots Section */}
+                                <div style={{ 
+                                    marginTop: '1rem',
+                                    paddingTop: '1rem',
+                                    borderTop: '1px solid rgba(167, 139, 250, 0.2)'
+                                }}>
+                                    <div style={{ fontWeight: '600', marginBottom: '0.5rem', color: 'var(--accent-primary)' }}>
+                                        🔄 {t.auth.bot_multiple_bots_title}
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                                        {t.auth.bot_multiple_bots_desc}
+                                    </div>
+                                    <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.8rem' }}>
+                                        <li>{t.auth.bot_multiple_bots_step1}</li>
+                                        <li>{t.auth.bot_multiple_bots_step2}</li>
+                                        <li>{t.auth.bot_multiple_bots_step3}</li>
+                                        <li>{t.auth.bot_multiple_bots_step4}</li>
+                                    </ol>
+                                </div>
+
                                 <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                                     After creating your bot, paste the token above. Telegram bot is required to use receipt parsing via Telegram.
                                 </div>
