@@ -6,7 +6,7 @@ import { ScanLine, LogOut, Bot, Check, AlertCircle, Plus, Trash2, TrendingUp, Pi
 import { useLanguage } from '@/context/LanguageContext';
 import { useMobile } from '@/hooks/useMobile';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Label } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Label, Line, ComposedChart } from 'recharts';
 
 // Vibrant Multicolor Palette
 const COLORS = ['#F472B6', '#38BDF8', '#A78BFA', '#34D399', '#FBBF24', '#FB7185', '#22D3EE', '#C084FC'];
@@ -23,6 +23,51 @@ const renderCustomizedLabel = (props: any) => {
             {`${(percent * 100).toFixed(0)}%`}
         </text>
     ) : null;
+};
+
+// Category color mapping - consistent colors for categories
+const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
+    'Meals - Breakfast': { bg: '#fef3c7', text: '#d97706' },
+    'Meals - Lunch': { bg: '#dbeafe', text: '#2563eb' },
+    'Meals - Dinner': { bg: '#ede9fe', text: '#7c3aed' },
+    'Meals - Drinks': { bg: '#fce7f3', text: '#db2777' },
+    'Groceries': { bg: '#d1fae5', text: '#059669' },
+    'Transport': { bg: '#cffafe', text: '#0891b2' },
+    'Shopping': { bg: '#ffedd5', text: '#ea580c' },
+    'Entertainment': { bg: '#f3e8ff', text: '#9333ea' },
+    'Healthcare': { bg: '#fee2e2', text: '#dc2626' },
+    'Utilities': { bg: '#f1f5f9', text: '#475569' },
+    'Travel': { bg: '#ecfccb', text: '#65a30d' },
+    'Others': { bg: '#f3f4f6', text: '#4b5563' },
+};
+
+const getCategoryColor = (category: string) => {
+    // Check for exact match first
+    if (CATEGORY_COLORS[category]) {
+        return CATEGORY_COLORS[category];
+    }
+    // Check for partial matches
+    for (const [key, value] of Object.entries(CATEGORY_COLORS)) {
+        if (category.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(category.toLowerCase())) {
+            return value;
+        }
+    }
+    // Generate consistent color from category string hash
+    let hash = 0;
+    for (let i = 0; i < category.length; i++) {
+        hash = category.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const colors = [
+        { bg: '#dbeafe', text: '#1e40af' },
+        { bg: '#fce7f3', text: '#be185d' },
+        { bg: '#d1fae5', text: '#047857' },
+        { bg: '#fef3c7', text: '#b45309' },
+        { bg: '#ede9fe', text: '#5b21b6' },
+        { bg: '#cffafe', text: '#0e7490' },
+        { bg: '#ffedd5', text: '#9a3412' },
+        { bg: '#fee2e2', text: '#991b1b' },
+    ];
+    return colors[Math.abs(hash) % colors.length];
 };
 
 
@@ -553,7 +598,12 @@ export default function DashboardPage() {
                                 )}
                                 <form onSubmit={handleAddBot} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
                                     <input type="text" className="input" placeholder={t.dashboard.bots.token_placeholder} value={newToken} onChange={(e) => setNewToken(e.target.value)} style={{ flex: 1 }} />
-                                    <button type="submit" className="btn btn-primary" disabled={isBotLoading} style={{ height: '48px', width: '48px', padding: 0 }}><Plus size={20} /></button>
+                                    <button type="submit" className="btn btn-primary" disabled={isBotLoading} onClick={(e) => {
+                                        if (!newToken.trim()) {
+                                            e.preventDefault();
+                                            setShowBotHelpDashboard(true);
+                                        }
+                                    }} style={{ height: '48px', width: '48px', padding: 0 }}><Plus size={20} /></button>
                                 </form>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem', paddingLeft: '0.25rem' }}>
                                     Paste your Telegram bot token here. Need help creating a bot? Click "Need help?" above.
@@ -641,7 +691,19 @@ export default function DashboardPage() {
                                         </ResponsiveContainer>
                                     ) : (
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={metrics?.trend || []}>
+                                            <ComposedChart data={(() => {
+                                                // Calculate percentage change for each data point
+                                                const trend = metrics?.trend || [];
+                                                return trend.map((item: any, index: number) => {
+                                                    if (index === 0) {
+                                                        return { ...item, percentChange: 0 };
+                                                    }
+                                                    const prevTotal = trend[index - 1].total;
+                                                    const currTotal = item.total;
+                                                    const percentChange = prevTotal > 0 ? ((currTotal - prevTotal) / prevTotal) * 100 : 0;
+                                                    return { ...item, percentChange: Number(percentChange.toFixed(1)) };
+                                                });
+                                            })()}>
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
                                                 <XAxis
                                                     dataKey="label"
@@ -651,18 +713,51 @@ export default function DashboardPage() {
                                                     dy={10}
                                                 />
                                                 <YAxis
+                                                    yAxisId="left"
                                                     axisLine={false}
                                                     tickLine={false}
                                                     tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
                                                     tickFormatter={(value) => `$${value}`}
                                                 />
+                                                <YAxis
+                                                    yAxisId="right"
+                                                    orientation="right"
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{ fill: '#FBBF24', fontSize: 10 }}
+                                                    tickFormatter={(value) => `${value}%`}
+                                                />
                                                 <Tooltip
                                                     cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                                                     contentStyle={{ background: 'rgba(23, 23, 23, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
-                                                    formatter={(value: number | undefined) => value !== undefined ? [`SGD ${value.toFixed(2)}`, 'Total Spending'] : ['N/A', 'Total Spending']}
+                                                    formatter={(value: number | undefined, name: string | undefined) => {
+                                                        const safeName = name || '';
+                                                        if (safeName === 'Total Spending') {
+                                                            return value !== undefined ? [`SGD ${Number(value).toFixed(2)}`, safeName] : ['N/A', safeName];
+                                                        }
+                                                        if (safeName === 'Change %') {
+                                                            return value !== undefined ? [`${Number(value).toFixed(1)}%`, safeName] : ['N/A', safeName];
+                                                        }
+                                                        return [value, safeName];
+                                                    }}
                                                 />
-                                                <Bar dataKey="total" fill="var(--accent-primary)" radius={[6, 6, 0, 0]} maxBarSize={60} name="Total Spending" />
-                                            </BarChart>
+                                                <Bar yAxisId="left" dataKey="total" fill="var(--accent-primary)" radius={[6, 6, 0, 0]} maxBarSize={60} name="Total Spending" />
+                                                <Line
+                                                    yAxisId="right"
+                                                    type="monotone"
+                                                    dataKey="percentChange"
+                                                    stroke="#FBBF24"
+                                                    strokeWidth={2}
+                                                    dot={{ fill: '#FBBF24', strokeWidth: 2, r: 4 }}
+                                                    name="Change %"
+                                                />
+                                                <Legend
+                                                    verticalAlign="bottom"
+                                                    height={36}
+                                                    iconType="circle"
+                                                    formatter={(value) => <span style={{ color: 'var(--text-primary)', fontSize: '12px' }}>{value}</span>}
+                                                />
+                                            </ComposedChart>
                                         </ResponsiveContainer>
                                     )}
                                     {(!metrics?.trend || metrics.trend.length === 0) && (
@@ -806,16 +901,38 @@ export default function DashboardPage() {
                                         {expenses.map((exp) => (
                                             <tr key={exp.id} style={{ borderBottom: '1px solid var(--glass-border)', transition: 'background 0.2s' }} className="table-row-hover">
                                                 <td style={{ padding: '0.75rem 1rem', fontSize: '0.8rem' }}>
-                                                    {new Date(exp.expense_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                                    {(() => {
+                                                        const date = new Date(exp.expense_date);
+                                                        const today = new Date();
+                                                        const isCurrentYear = date.getFullYear() === today.getFullYear();
+                                                        return date.toLocaleDateString('en-GB', { 
+                                                            day: '2-digit', 
+                                                            month: 'short',
+                                                            ...(isCurrentYear ? {} : { year: '2-digit' })
+                                                        });
+                                                    })()}
                                                 </td>
                                                 <td style={{ padding: '0.75rem 1rem', fontSize: '0.8rem' }}>
                                                     <div style={{ fontWeight: '700', fontSize: '0.8rem' }}>{exp.vendor}</div>
                                                     <div style={{ fontSize: '0.65rem', opacity: 0.6 }}>{exp.bot_username}</div>
                                                 </td>
                                                 <td style={{ padding: '0.75rem 1rem' }}>
-                                                    <span style={{ padding: '0.2rem 0.5rem', background: 'rgba(139,92,246,0.1)', color: 'var(--accent-primary)', borderRadius: '6px', fontSize: '0.65rem', fontWeight: '700' }}>
-                                                        {exp.category}
-                                                    </span>
+                                                    {(() => {
+                                                        const catColor = getCategoryColor(exp.category || 'Others');
+                                                        return (
+                                                            <span style={{ 
+                                                                padding: '0.25rem 0.6rem', 
+                                                                background: catColor.bg, 
+                                                                color: catColor.text, 
+                                                                borderRadius: '6px', 
+                                                                fontSize: '0.65rem', 
+                                                                fontWeight: '700',
+                                                                display: 'inline-block'
+                                                            }}>
+                                                                {exp.category}
+                                                            </span>
+                                                        );
+                                                    })()}
                                                 </td>
                                                 <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                                                     {exp.receipt_image_url ? (
