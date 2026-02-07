@@ -612,13 +612,27 @@ export default function DashboardPage() {
                                     {bots.length > 0 ? (
                                         bots.map((bot) => (
                                             <div key={bot.id} className="animate-fade-in" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
                                                     <Bot size={18} className="text-accent" />
                                                     <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{bot.bot_username}</div>
                                                 </div>
-                                                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                                    <a href={`https://t.me/${bot.bot_username?.replace('@', '')}`} target="_blank" className="btn btn-ghost" style={{ padding: '0.4rem' }}><MessageSquare size={16} /></a>
-                                                    <button onClick={() => handleDeleteBot(bot.id)} className="btn btn-ghost" style={{ padding: '0.4rem', color: '#ef4444' }}><Trash2 size={16} /></button>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                                                        {(() => {
+                                                            const date = new Date(bot.created_at);
+                                                            const today = new Date();
+                                                            const isCurrentYear = date.getFullYear() === today.getFullYear();
+                                                            return date.toLocaleDateString('en-GB', {
+                                                                day: '2-digit',
+                                                                month: 'short',
+                                                                ...(isCurrentYear ? {} : { year: '2-digit' })
+                                                            });
+                                                        })()}
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                        <a href={`https://t.me/${bot.bot_username?.replace('@', '')}`} target="_blank" className="btn btn-ghost" style={{ padding: '0.4rem' }}><MessageSquare size={16} /></a>
+                                                        <button onClick={() => handleDeleteBot(bot.id)} className="btn btn-ghost" style={{ padding: '0.4rem', color: '#ef4444' }}><Trash2 size={16} /></button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))
