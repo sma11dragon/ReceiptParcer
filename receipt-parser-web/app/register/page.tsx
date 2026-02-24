@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ScanLine, ArrowLeft, Mail, Lock, User, MapPin, Bot, Key, ChevronDown, ChevronUp, Eye, EyeOff, Check, Loader2 } from 'lucide-react';
+import { ScanLine, ArrowLeft, Mail, Lock, User, MapPin, Bot, Eye, EyeOff, Check, Loader2 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useMobile } from '@/hooks/useMobile';
@@ -295,7 +295,7 @@ export default function Register() {
                                         📋 Understanding Bot Names
                                     </div>
                                     <div style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                                        <strong>Display Name:</strong> What users see (e.g., "OnboardTest Jakarta")
+                                        <strong>Display Name:</strong> What users see (e.g., &#34;OnboardTest Jakarta&#34;)
                                     </div>
                                     <div style={{ fontSize: '0.8rem' }}>
                                         <strong>Username:</strong> The unique handle (e.g., @UATboardingBot)

@@ -1,6 +1,6 @@
 // Simplified input validation for ReceiptAI API
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export interface ValidationResult {
     isValid: boolean;

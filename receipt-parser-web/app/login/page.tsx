@@ -17,6 +17,7 @@ function RegistrationSuccessMessage() {
         const savedEmail = localStorage.getItem('temp_reg_email');
 
         if (registered === 'true' && savedEmail) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setShowRegistrationSuccess(true);
             // Clear temp credentials after a delay
             setTimeout(() => {
@@ -64,8 +65,10 @@ export default function Login() {
         const savedPassword = localStorage.getItem('temp_reg_password');
         
         if (savedEmail) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setEmail(savedEmail);
             if (savedPassword) {
+                 
                 setPassword(savedPassword);
             }
         }

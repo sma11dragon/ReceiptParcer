@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Don't send password hash to client
-        const { password_hash, ...userWithoutPassword } = user;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password_hash: _, ...userWithoutPassword } = user;
 
         // In a production app, you'd create a session/JWT token here
         // For now, we'll just return the user data

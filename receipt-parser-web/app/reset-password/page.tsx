@@ -16,7 +16,7 @@ export default function ResetPassword() {
     const [otp, setOtp] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [email, setEmail] = useState(() => {
+    const [email, _setEmail] = useState(() => {
         // Initialize from sessionStorage
         if (typeof window !== 'undefined') {
             return sessionStorage.getItem('resetEmail') || '';

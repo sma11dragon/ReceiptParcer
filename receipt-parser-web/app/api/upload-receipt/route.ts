@@ -51,7 +51,8 @@ function getB2Config() {
 }
 
 // Keep R2 config for reading old receipts (backward compatibility)
-const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
 
 import { validateUserId, validateFilename, createValidationErrorResponse, sanitizeFilename } from '@/lib/validation';
 import { protectRoute } from '@/lib/auth';

@@ -2,28 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ScanLine, LogOut, Bot, Check, AlertCircle, Plus, Trash2, TrendingUp, PieChart as PieChartIcon, Activity, Sparkles, MessageSquare, Filter, Calendar, Search, ArrowUpDown, ChevronDown, FileText, ExternalLink, ArrowUp, ArrowDown } from 'lucide-react';
+import { ScanLine, LogOut, Bot, Plus, Trash2, TrendingUp, PieChart as PieChartIcon, Activity, Sparkles, MessageSquare, Filter, Calendar, Search, ExternalLink, ArrowUp, ArrowDown } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useMobile } from '@/hooks/useMobile';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Label, Line, ComposedChart } from 'recharts';
+import { PieChart, Pie, Cell, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Label, Line, ComposedChart } from 'recharts';
 
 // Vibrant Multicolor Palette
 const COLORS = ['#F472B6', '#38BDF8', '#A78BFA', '#34D399', '#FBBF24', '#FB7185', '#22D3EE', '#C084FC'];
 
-const renderCustomizedLabel = (props: any) => {
-    const { cx, cy, midAngle, innerRadius, outerRadius, percent, index, name } = props;
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
-    return percent > 0.05 ? (
-        <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={10}>
-            {`${(percent * 100).toFixed(0)}%`}
-        </text>
-    ) : null;
-};
 
 // Category color mapping - consistent colors for categories
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
@@ -75,7 +63,7 @@ const getCategoryColor = (category: string) => {
 export default function DashboardPage() {
     const { t } = useLanguage();
     const router = useRouter();
-    const isMobile = useMobile();
+    const _isMobile = useMobile();
     const [user, setUser] = useState<any>(null);
     const [bots, setBots] = useState<any[]>([]);
     const [expenses, setExpenses] = useState<any[]>([]);
@@ -606,7 +594,7 @@ export default function DashboardPage() {
                                     }} style={{ height: '48px', width: '48px', padding: 0 }}><Plus size={20} /></button>
                                 </form>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem', paddingLeft: '0.25rem' }}>
-                                    Paste your Telegram bot token here. Need help creating a bot? Click "Need help?" above.
+                                    Paste your Telegram bot token here. Need help creating a bot? Click &#34;Need help?&#34; above.
                                 </div>
                                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     {bots.length > 0 ? (

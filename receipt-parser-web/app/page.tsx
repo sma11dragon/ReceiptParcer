@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { ScanLine, Bot, LineChart, ShieldCheck, Check, Star, Mail, ArrowRight, Zap, Upload, MessageSquare, FileText } from 'lucide-react';
+import { ScanLine, Bot, LineChart, ShieldCheck, Check, Star, Mail, ArrowRight, Upload, FileText } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { TelegramDemo } from '@/components/TelegramDemo';

@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Invalid token payload' }, { status: 400 });
         }
 
-        const { email, name, sub: googleId } = payload;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { email, name, sub: _googleId } = payload;
 
         // Check if user exists
         const userResult = await pool.query(
@@ -59,7 +60,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Remove password hash before sending back
-        const { password_hash, ...userWithoutPassword } = user;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password_hash: _, ...userWithoutPassword } = user;
 
         return NextResponse.json({
             success: true,
