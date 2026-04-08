@@ -142,12 +142,12 @@ def _compute_signal(df: pd.DataFrame) -> tuple:
 
 
 def _get_position() -> int:
-    """Return 1 (long) or 0 (flat) from Binance TESTNET."""
+    """Return 1 (long), -1 (short), or 0 (flat) from Binance TESTNET."""
     pos = client.futures_position_information(symbol=SYMBOL)
     if not pos:
         return 0
     qty = float(pos[0].get("positionAmt", 0))
-    return 1 if qty > 0 else 0
+    return 1 if qty > 0 else (-1 if qty < 0 else 0)
 
 
 def _open_long() -> None:
@@ -160,16 +160,18 @@ def _open_long() -> None:
 
 
 def _close_position() -> None:
-    """Close existing long position with reduceOnly order."""
+    """Close any open position (long or short) with a reduceOnly order."""
     info = client.futures_position_information(symbol=SYMBOL)
-    qty  = abs(float(info[0]["positionAmt"]))
+    qty  = float(info[0]["positionAmt"])
     if qty == 0:
         return
+    # SIDE_SELL closes a long; SIDE_BUY closes a short (buy-to-cover)
+    side = SIDE_SELL if qty > 0 else SIDE_BUY
     client.futures_create_order(
         symbol=SYMBOL,
-        side=SIDE_SELL,
+        side=side,
         type=FUTURE_ORDER_TYPE_MARKET,
-        quantity=qty,
+        quantity=abs(qty),
         reduceOnly=True,
     )
 
@@ -247,6 +249,17 @@ def main() -> None:
         _close_position()
         _alert(f"✅ CLOSE LONG | {SYMBOL}")
         _log("CLOSE", signal, current_pos, close, ss, sl, sr)
+
+    elif current_pos == -1:
+        # Unexpected short position (e.g. manual override or account conflict).
+        # This strategy is long-only — close the short immediately and alert.
+        _close_position()
+        _alert(f"⚠️ UNEXPECTED SHORT closed | {SYMBOL} | signal={signal}")
+        _log("CLOSE_SHORT_UNEXPECTED", signal, current_pos, close, ss, sl, sr)
+        if signal == 1:
+            _open_long()
+            _alert(f"✅ OPEN LONG after closing unexpected short | {SYMBOL} | qty={QUANTITY}")
+            _log("OPEN_LONG", signal, 0, close, ss, sl, sr)
 
     else:
         _log("HOLD", signal, current_pos, close, ss, sl, sr)
